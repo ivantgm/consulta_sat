@@ -27,22 +27,22 @@ class FormGravarBanco(QMainWindow):
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
-        self.add_field(row_layout, "Chave de Acesso", "35250447603246000111590010366852296731129035")        
+        self.add_field(row_layout, "Chave de Acesso", "01234567890123456789012345678901234567890212")        
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
-        self.add_field(row_layout, "CNPJ", "47.603.246/0001-11", stretch=4)
-        self.add_field(row_layout, "Fantasia", "SUPERMERCADO MICHELASSI", stretch=6)
+        self.add_field(row_layout, "CNPJ", "00.000.000/0000-00", stretch=4)
+        self.add_field(row_layout, "Fantasia", "SUPERMERCADO SUPERMERCADO", stretch=6)
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
-        self.add_field(row_layout, "Endereço", "RUA GONCALVES DIAS, Nº 35 - Não Informado")
+        self.add_field(row_layout, "Endereço", "AVENIDA AVENIDA")
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
         self.add_field(row_layout, "Bairro", "CENTRO", stretch=4)
-        self.add_field(row_layout, "CEP", "17250-043", stretch=2)
-        self.add_field(row_layout, "Município", "BARIRI", stretch=4)
+        self.add_field(row_layout, "CEP", "12345-678", stretch=2)
+        self.add_field(row_layout, "Município", "CIDADE", stretch=4)
 
         bottom_panel = QFrame()
         bottom_layout = QHBoxLayout(bottom_panel)
