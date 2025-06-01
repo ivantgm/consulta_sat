@@ -1,4 +1,32 @@
 -----------------------------------------------------------
+select
+  codigo, 
+  descricao, 
+  count(codigo) as vezes, 
+  sum(qtde) as qtde, 
+  avg(valor_unit) as valor_medio_unit_bruto,
+  sum(valor_total) as total_bruto, 
+  sum(desconto) as valor_desconto,
+  avg((valor_total-desconto)/qtde) as valor_medio_unit_liq, 
+  sum(valor_total-desconto) as total_liq
+from cupom_item
+group by codigo
+order by total_liq desc
+
+-----------------------------------------------------------
+select 
+  e.nome,
+  e.fantasia,
+  c.data_hora_emissao,
+  i.qtde,
+  i.valor_unit,
+  i.valor_total,
+  i.desconto
+from cupom_item i
+left outer join cupom c on c.id = i.id_cupom
+left outer join emitente e on e.cnpj = c.cnpj_emitente
+where i.codigo = '560481'
+-----------------------------------------------------------
 select 
   codigo, 
   descricao, 
@@ -7,6 +35,18 @@ select
   avg(valor_unit) as valor_medio_unit, 
   sum(valor_total) as total, 
   sum(desconto) as desconto
+from cupom_item
+group by codigo
+order by total desc
+
+-----------------------------------------------------------
+select 
+  codigo, 
+  descricao, 
+  count(codigo) as vezes, 
+  sum(qtde) as qtde, 
+  avg((valor_total-desconto)/qtde) as valor_medio_unit, 
+  sum(valor_total-desconto) as total
 from cupom_item
 group by codigo
 order by total desc
