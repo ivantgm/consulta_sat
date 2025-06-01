@@ -3,6 +3,7 @@ html/
 json/
 chaves.txt
 banco.db
+banco.db-journal
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
