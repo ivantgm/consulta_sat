@@ -67,6 +67,9 @@ def consulta_sat(chave_acesso, aguardar_consulta_callback=None):
 		valores = [coluna.text for coluna in colunas]
 		if not valores or (valores[0] == ''):
 			continue
+		if (len(valores) == 2) and (valores[0] == 'Desconto:'):
+			result["itens"][-1]['desconto'] = valores[1]
+			continue
 		item = {
 			'seq': valores[0],
 			'codigo': valores[1],
@@ -75,7 +78,8 @@ def consulta_sat(chave_acesso, aguardar_consulta_callback=None):
 			'un': valores[4],
 			'valor_unit': valores[5],
 			'tributos': valores[6],
-			'valor_total': valores[7]
+			'valor_total': valores[7],
+			'desconto': None
 		}
 		result["itens"].append(item)
 	
