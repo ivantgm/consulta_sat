@@ -3,6 +3,20 @@ import json
 import os
 from datetime import datetime
 
+CREATE_TABLE_EMITENTE = '''
+CREATE TABLE IF NOT EXISTS emitente (
+    cnpj TEXT UNIQUE,
+    ie TEXT,
+    im TEXT,
+    nome TEXT,
+    fantasia TEXT,
+    endereco TEXT,
+    bairro TEXT,
+    cep TEXT,
+    municipio TEXT
+);
+'''
+
 CREATE_TABLE_CUPOM = '''
 CREATE TABLE IF NOT EXISTS cupom (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -14,20 +28,12 @@ CREATE TABLE IF NOT EXISTS cupom (
     total_tributos REAL,
     obs_cupom TEXT,
     obs_inf TEXT,
-    emitente_cnpj TEXT,
-    emitente_ie TEXT,
-    emitente_im TEXT,
-    emitente_nome TEXT,                   
-    emitente_fantasia TEXT,
-    emitente_endereco TEXT,
-    emitente_bairro TEXT,
-    emitente_cep TEXT,
-    emitente_municipio TEXT,
+    cnpj_emitente TEXT,
     cpf_consumidor TEXT,
     razao_social_consumidor TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_cupom_data_hora_emissao ON cupom (data_hora_emissao);
-CREATE INDEX IF NOT EXISTS idx_cupom_emitente_cnpj ON cupom (emitente_cnpj);
+CREATE INDEX IF NOT EXISTS idx_cupom_cnpj_emitente ON cupom (cnpj_emitente);
 '''
 
 CREATE_TABLE_CUPOM_ITEM = '''
@@ -41,11 +47,27 @@ CREATE TABLE IF NOT EXISTS cupom_item (
     un TEXT,
     valor_unit REAL,
     tributos REAL,
-    valor_total REAL
+    valor_total REAL,
+    desconto REAL
 );
 CREATE INDEX IF NOT EXISTS idx_cupom_item_id_cupom ON cupom_item (id_cupom);
 CREATE INDEX IF NOT EXISTS idx_cupom_item_codigo ON cupom_item (codigo);    
 CREATE INDEX IF NOT EXISTS idx_cupom_item_descricao ON cupom_item (descricao);
+'''
+
+INSERT_EMITENTE = '''
+INSERT OR REPLACE INTO emitente (
+    cnpj,
+    ie,
+    im,
+    nome,
+    fantasia,
+    endereco,
+    bairro,
+    cep,
+    municipio
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
 INSERT_CUPOM = '''
@@ -58,19 +80,11 @@ INSERT INTO cupom (
     obs_cupom,              
     obs_inf,                
     total_tributos,         
-    emitente_cnpj,          
-    emitente_ie,            
-    emitente_im,           
-    emitente_nome,          
-    emitente_fantasia,      
-    emitente_endereco,      
-    emitente_bairro,        
-    emitente_cep,           
-    emitente_municipio,     
+    cnpj_emitente,          
     cpf_consumidor,         
     razao_social_consumidor            
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
 INSERT_CUPOM_ITEM = '''
@@ -83,16 +97,19 @@ INSERT INTO cupom_item (
     un,
     valor_unit,
     tributos,
-    valor_total
+    valor_total,
+    desconto
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
 def save_json_to_sqlite(cupom, user_obs_inf=""):
     db_file = "banco.db"
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
+    cursor.executescript(CREATE_TABLE_EMITENTE)
     cursor.executescript(CREATE_TABLE_CUPOM)
+    cursor.executescript(CREATE_TABLE_CUPOM_ITEM)
 
     data_hora_emissao       = cupom["data_hora_emissao"]
     numero_cfe              = cupom["numero_cfe"]
@@ -118,6 +135,19 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
     valor_total = prepare_float(valor_total)
     total_tributos = prepare_float(total_tributos)
 
+    emitente_data = (
+        emitente_cnpj,
+        emitente_ie,
+        emitente_im,
+        emitente_nome,
+        emitente_fantasia,
+        emitente_endereco,
+        emitente_bairro,
+        emitente_cep,
+        emitente_municipio
+    )
+    cursor.execute(INSERT_EMITENTE, emitente_data)
+
     cupom_data = (
         data_hora_emissao,
         numero_cfe,
@@ -128,21 +158,11 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         obs_inf,
         total_tributos,
         emitente_cnpj,
-        emitente_ie,
-        emitente_im,
-        emitente_nome,
-        emitente_fantasia,
-        emitente_endereco,
-        emitente_bairro,
-        emitente_cep,
-        emitente_municipio,
         cpf_consumidor,
         razao_social_consumidor
     )
     cursor.execute(INSERT_CUPOM, cupom_data)
-    last_insert_id = cursor.lastrowid
-
-    cursor.executescript(CREATE_TABLE_CUPOM_ITEM)
+    last_insert_id = cursor.lastrowid    
 
     for item in cupom["itens"]:
         seq = item["seq"]
@@ -153,11 +173,13 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         valor_unit = item["valor_unit"]
         tributos = item["tributos"]
         valor_total_item = item["valor_total"]
+        desconto = item["desconto"] if item["desconto"] is not None else "0"
 
         qtde = prepare_float(qtde)
         valor_unit = prepare_float(valor_unit)
         tributos = prepare_float(tributos)
         valor_total_item = prepare_float(valor_total_item)
+        desconto = prepare_float(desconto)
 
         cupom_item_data = (
             last_insert_id,
@@ -168,7 +190,8 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
             un,
             valor_unit,
             tributos,
-            valor_total_item
+            valor_total_item,
+            desconto
         )
         cursor.execute(INSERT_CUPOM_ITEM, cupom_item_data)    
 
@@ -186,11 +209,13 @@ def prepare_float(value):
             .replace("(", "")
             .replace(")", "")
             .replace("X\n", "")
+            .replace("-", "")
+            .replace(" ", "")
             .strip()
         )
 
 if __name__ == "__main__":
-    json_file_path = "./json/35250447603246000111590012086000099597428471.json"
+    json_file_path = "./json/35250447603246000111590012076370292841064344.json"
     if os.path.exists(json_file_path):
         with open(json_file_path, "r", encoding="utf-8") as file:
             json_data = json.load(file)
