@@ -215,10 +215,11 @@ def prepare_float(value):
         )
 
 if __name__ == "__main__":
-    json_file_path = "./json/35250547603246000111590012086000104238799700.json"
-    if os.path.exists(json_file_path):
-        with open(json_file_path, "r", encoding="utf-8") as file:
+    chave_acesso = input("Digite a chave de acesso: ").strip()
+    json_file = "./json/{}.json".format(chave_acesso)
+    if os.path.exists(json_file):
+        with open(json_file, "r", encoding="utf-8") as file:
             json_data = json.load(file)
             save_json_to_sqlite(json_data)
     else:
-        print(f"Arquivo JSON não encontrado: {json_file_path}")
+        print(f"Arquivo JSON não encontrado: {json_file}")

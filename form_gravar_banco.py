@@ -84,8 +84,10 @@ class FormGravarBanco(QMainWindow):
         self.findChild(QLineEdit, "CEP").setText(data["emitente"]["cep"])
         self.findChild(QLineEdit, "Município").setText(data["emitente"]["municipio"])
 
-if __name__ == "__main__":    
-    with open('./json/35250447603246000111590012086000099842701376.json') as f:
+if __name__ == "__main__":  
+    chave_acesso = input("Digite a chave de acesso: ").strip()
+    json_file = "./json/{}.json".format(chave_acesso)      
+    with open(json_file) as f:
         app = QApplication([])
         cupom = json.load(f)
         window = FormGravarBanco()
