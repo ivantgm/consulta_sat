@@ -75,3 +75,15 @@ select sum(i.valor_total - i.desconto)
 from cupom c
 left outer join cupom_item i on i.id_cupom = c.id
 where c.cnpj_emitente='47.603.246/0001-11'
+
+-----------------------------------------------------------
+select 
+  c.data_hora_emissao,   
+  i.valor_unit-(i.desconto/i.qtde) as valor_unit,
+  e.fantasia as estabelecimento,
+  e.endereco as endereco
+from cupom_item i
+left outer join cupom c on c.id = i.id_cupom
+left outer join emitente e on e.cnpj = c.cnpj_emitente
+where i.codigo = '2332'
+order by c.data_hora_emissao desc
