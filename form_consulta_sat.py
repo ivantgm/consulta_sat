@@ -5,8 +5,7 @@ from PySide6.QtWidgets import (
 )
 import sys
 import selenium_sat
-import json
-
+import sqlite_sat 
 
 class FormConsultaSAT(QMainWindow):
     cupons_lidos = list()
@@ -71,24 +70,12 @@ class FormConsultaSAT(QMainWindow):
         bottom_layout.setAlignment(Qt.AlignmentFlag.AlignRight)  # Align buttons to the right
         main_layout.addWidget(bottom_panel)
 
-        self.save_button = QPushButton("Salvar")
-        bottom_layout.addWidget(self.save_button)
-        self.save_button.clicked.connect(self.on_save_button_clicked)
-
         self.cancel_button = QPushButton("Cancelar")
         bottom_layout.addWidget(self.cancel_button)
         self.cancel_button.clicked.connect(self.on_cancel_button_clicked)
-
-    def on_save_button_clicked(self):
-        self.carregar_json_teste()
-
-    def carregar_json_teste(self):
-        with open('./json/35250447603246000111590012086000099842701376.json') as f:
-            d = json.load(f)
-            self.add_cupom_memoria(d)   
             
     def on_cancel_button_clicked(self):
-        pass
+        self.close()
 
     def on_consult_button_clicked(self): 
             keys = self.text_edit.toPlainText().splitlines()
@@ -128,6 +115,14 @@ class FormConsultaSAT(QMainWindow):
             self.table2.setItem(row_position, 6, QTableWidgetItem(item['valor_total']))
             
         self.table2.resizeColumnsToContents()
+        sqlite_sat.save_json_to_sqlite(cupom)
+        
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Information)
+        msg_box.setText("Cupom adicionado com sucesso!")
+        msg_box.setWindowTitle("Sucesso")
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec()
 
     def filtrar_table2(self):
         selected_rows = self.table1.selectionModel().selectedRows()
