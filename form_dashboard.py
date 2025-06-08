@@ -2,9 +2,11 @@ import sys
 import sqlite3
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem,
-    QDateEdit, QPushButton, QLabel, QHBoxLayout, QMessageBox
+    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy
 )
-from PySide6.QtCore import QDate
+from PySide6.QtCore import (
+    Qt, QDate
+)
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -32,31 +34,61 @@ class Dashboard(QMainWindow):
         self.layout.addLayout(self.filter_layout)        
 
         # Filtros de data
+        data_inicial = QDate.currentDate().addMonths(-3)
+        data_inicial = QDate(
+            data_inicial.year(),
+            data_inicial.month(),
+            1
+        )
+        
+        self.data_i_layout = QVBoxLayout()
         self.start_date_edit = QDateEdit()
         self.start_date_edit.setCalendarPopup(True)
-        self.start_date_edit.setDate(QDate.currentDate().addMonths(-3))
-        self.filter_layout.addWidget(QLabel("Data Inicial:"))
-        self.filter_layout.addWidget(self.start_date_edit)
-
+        self.start_date_edit.setDate(data_inicial)
+        self.data_i_layout.addWidget(QLabel("Data Inicial:"))
+        self.data_i_layout.addWidget(self.start_date_edit)
+        self.filter_layout.addLayout(self.data_i_layout)
+        
+        data_f = QDate.currentDate()
+        data_f = QDate(
+            data_f.year(),
+            data_f.month(),
+            data_f.daysInMonth()
+        )
+        self.data_f_layout = QVBoxLayout()
         self.end_date_edit = QDateEdit()
         self.end_date_edit.setCalendarPopup(True)
-        self.end_date_edit.setDate(QDate.currentDate())
-        self.filter_layout.addWidget(QLabel("Data Final:"))
-        self.filter_layout.addWidget(self.end_date_edit)
+        self.end_date_edit.setDate(data_f)
+        self.data_f_layout.addWidget(QLabel("Data Final:"))
+        self.data_f_layout.addWidget(self.end_date_edit)
+        self.filter_layout.addLayout(self.data_f_layout)
 
+        self.button_filtrar_layout = QHBoxLayout()
         self.filter_button = QPushButton("Filtrar")
+        self.filter_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.filter_button.clicked.connect(self.load_data)
-        self.filter_layout.addWidget(self.filter_button)        
+        self.button_filtrar_layout.addWidget(self.filter_button)
+        self.filter_layout.addLayout(self.button_filtrar_layout)
 
         # Tabela de dados
         self.tables_layout = QHBoxLayout()
         self.layout.addLayout(self.tables_layout)
+
+        self.table_layout = QVBoxLayout()
+        self.table_layout.addWidget(QLabel("Agrupamento:"))
         self.table = QTableWidget()
-        self.tables_layout.addWidget(self.table, stretch=2)
+        self.table_layout.addWidget(self.table)
+        self.tables_layout.addLayout(self.table_layout, stretch=2)
         self.table.itemSelectionChanged.connect(self.get_cupons)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        
+        self.table2_layout = QVBoxLayout()
+        self.table2_layout.addWidget(QLabel(
+            "Listagem analítica de cupons, clique com direito para mais opções.")
+        )
         self.table2 = QTableWidget()
-        self.tables_layout.addWidget(self.table2, stretch=3)
+        self.table2_layout.addWidget(self.table2)
+        self.tables_layout.addLayout(self.table2_layout, stretch=5)
 
         # Gráfico
         self.figure = Figure()
@@ -99,7 +131,11 @@ class Dashboard(QMainWindow):
 
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
-                self.table2.setItem(i, j, QTableWidgetItem(str(val)))
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                if j == 1:
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                self.table2.setItem(i, j, item)
 
         self.table2.resizeColumnsToContents()
 
@@ -115,7 +151,7 @@ class Dashboard(QMainWindow):
             select 
                 substr(c.data_hora_emissao, 5, 2) || '/' ||
                 substr(c.data_hora_emissao, 1, 4) as data,   
-                sum(c.valor_total) as valor_total,
+                round(sum(c.valor_total), 2) as valor_total,
                 count(c.id) as qtde_cupons
             from cupom c
             where c.data_hora_emissao between ? and ?
@@ -125,16 +161,18 @@ class Dashboard(QMainWindow):
         self.cursor.execute(SELECT_CUPOM, (data_inicio, data_fim))
         rows = self.cursor.fetchall()
 
-        # Atualizar tabela
         self.table.setRowCount(len(rows))
         self.table.setColumnCount(3)
         self.table.setHorizontalHeaderLabels(["Mês/Ano", "Valor", "Cupons"])
 
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
-                self.table.setItem(i, j, QTableWidgetItem(str(val)))
-
-        # Atualizar gráfico
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                if j in [1, 2]:
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)                
+                self.table.setItem(i, j, item)
+        self.table.resizeColumnsToContents()
         self.plot_chart(rows)
 
     def plot_chart(self, data):
