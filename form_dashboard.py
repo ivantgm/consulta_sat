@@ -2,7 +2,7 @@ import sys
 import sqlite3
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem,
-    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy, QMenu, QDialog
+    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy, QMenu, QFrame, QLineEdit
 )
 from PySide6.QtCore import (
     Qt, QDate
@@ -101,15 +101,15 @@ class Dashboard(QMainWindow):
 
     def show_context_menu(self, position):
         index = self.table2.indexAt(position)
-        row = index.row()
-        if row >= 0:  
+        id_cupom = self.table2.item(index.row(), 4).text() if index.isValid() else None
+        if id_cupom is not None:  
             menu = QMenu(self)
             action = menu.addAction("Ver itens do cupom")
-            action.triggered.connect(lambda: self.on_row_action(row))
+            action.triggered.connect(lambda: self.on_row_action(id_cupom))
             menu.exec(self.table2.viewport().mapToGlobal(position))  
 
-    def on_row_action(self, row):
-        child = ChildWindow(row_number=row, parent=self)
+    def on_row_action(self, id_cupom):
+        child = DashboardItens(parent=self, cursor=self.cursor, id_cupom=id_cupom)
         child.show()
 
     def get_cupons(self):
@@ -125,7 +125,8 @@ class Dashboard(QMainWindow):
                 substr(c.data_hora_emissao, 1, 4) as data,
                 c.valor_total,
                 e.fantasia,
-                e.endereco
+                e.endereco,
+                c.id
             from cupom c
             join emitente e on c.cnpj_emitente = e.cnpj
             where c.id in({})
@@ -137,8 +138,9 @@ class Dashboard(QMainWindow):
 
         # Atualizar tabela
         self.table2.setRowCount(len(rows))
-        self.table2.setColumnCount(4)
-        self.table2.setHorizontalHeaderLabels(["Data", "Valor", "Emitente", "Endereço"])
+        self.table2.setColumnCount(5)
+        self.table2.setColumnHidden(4, True)
+        self.table2.setHorizontalHeaderLabels(["Data", "Valor", "Emitente", "Endereço", "ID"])
 
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
@@ -220,10 +222,26 @@ class Dashboard(QMainWindow):
 
         self.canvas.draw()
 
-class ChildWindow(QDialog):
-    def __init__(self, row_number=0, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(f"Janela Filha - Linha {row_number}")
+class DashboardItens(QMainWindow):
+    def __init__(self, parent, cursor, id_cupom):
+        super().__init__(parent)        
+        SELECT_CUPOM = """
+            select                
+                substr(c.data_hora_emissao, 7, 2) || '/' ||
+                substr(c.data_hora_emissao, 5, 2) || '/' ||
+                substr(c.data_hora_emissao, 1, 4) as data, 
+                c.valor_total,
+                c.cnpj_emitente,
+                e.fantasia,
+                e.endereco,
+                c.chave_acesso
+            from cupom c
+            join emitente e on c.cnpj_emitente = e.cnpj
+            where c.id = ?
+        """
+        cursor.execute(SELECT_CUPOM, (id_cupom,))
+        row = cursor.fetchone()        
+        self.setWindowTitle(f"Itens do cupom")
 
         self.setWindowFlags(
             Qt.Window |
@@ -231,12 +249,86 @@ class ChildWindow(QDialog):
             Qt.WindowCloseButtonHint
         )
         self.setAttribute(Qt.WA_DeleteOnClose)
+        
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        self.setCentralWidget(main_widget)
+        client_panel = QFrame()
+        client_layout = QVBoxLayout(client_panel)
+        client_panel.setFrameShape(QFrame.Shape.StyledPanel)
+        main_layout.addWidget(client_panel)
 
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel(f"Você abriu a janela filha para a linha {row_number}"))
-        self.setLayout(layout)
+        row_layout = QHBoxLayout()
+        client_layout.addLayout(row_layout)
+        self.add_field(row_layout, "Data/Hora Emissão", row[0], stretch=4)
+        self.add_field(row_layout, "Valor Total", str(row[1]), stretch=3)
+        self.add_field(row_layout, "CNPJ", row[2], stretch=3)
 
-        self.resize(300, 100)    
+        row_layout = QHBoxLayout()
+        client_layout.addLayout(row_layout)        
+        self.add_field(row_layout, "Fantasia", row[3], stretch=3)
+        self.add_field(row_layout, "Endereço", row[4], stretch=3)
+        self.add_field(row_layout, "Chave de Acesso", row[5], stretch=4)
+
+        row_layout = QHBoxLayout()
+        client_layout.addLayout(row_layout)
+        self.table = QTableWidget()
+        row_layout.addWidget(self.table)
+
+        SELECT_CUPOM_ITENS = """            
+            select 
+                i.seq,
+                i.codigo,
+                i.descricao,                
+                i.qtde,
+                i.un,
+                i.valor_unit,
+                i.valor_total,
+                i.desconto
+            from cupom_item i
+            where i.id_cupom = ?
+            order by i.seq
+        """
+        cursor.execute(SELECT_CUPOM_ITENS, (id_cupom,))
+        rows = cursor.fetchall()
+
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(8)
+        self.table.setHorizontalHeaderLabels([
+            "Seq", "Código", "Descrição", "Qtde", "Un", 
+            "Valor Unit", "Valor Total", "Desconto"
+        ])
+
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                if j in [3, 5, 6, 7]:  
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                self.table.setItem(i, j, item)
+        self.table.resizeColumnsToContents()
+        self.setMinimumWidth(800)
+
+
+
+    def add_field(self, layout, label_text, default_value, stretch=0):
+        field_layout = QVBoxLayout()
+        label = QLabel(label_text)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        edit = QLineEdit()
+        edit.setText(default_value)
+        edit.setObjectName(label_text)
+        edit.setReadOnly(True)
+        field_layout.addWidget(label)
+        field_layout.addWidget(edit)
+
+        if isinstance(layout, QHBoxLayout):
+            container = QWidget()
+            container.setLayout(field_layout)
+            layout.addWidget(container, stretch)
+        else:
+            layout.addLayout(field_layout)
+
 
 
 if __name__ == "__main__":
