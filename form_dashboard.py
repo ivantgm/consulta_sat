@@ -260,13 +260,13 @@ class DashboardItens(QMainWindow):
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
-        self.add_field(row_layout, "Data/Hora Emissão", row[0], stretch=4)
-        self.add_field(row_layout, "Valor Total", str(row[1]), stretch=3)
-        self.add_field(row_layout, "CNPJ", row[2], stretch=3)
+        self.add_field(row_layout, "Data/Hora Emissão", row[0], stretch=1)
+        self.add_field(row_layout, "Valor Total", str(row[1]), stretch=1)
+        self.add_field(row_layout, "CNPJ", row[2], stretch=2)
+        self.add_field(row_layout, "Fantasia", row[3], stretch=3)
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)        
-        self.add_field(row_layout, "Fantasia", row[3], stretch=3)
         self.add_field(row_layout, "Endereço", row[4], stretch=3)
         self.add_field(row_layout, "Chave de Acesso", row[5], stretch=4)
 
