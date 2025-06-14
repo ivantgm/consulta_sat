@@ -2,7 +2,7 @@ import sys
 import sqlite3
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem,
-    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy
+    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy, QMenu, QDialog
 )
 from PySide6.QtCore import (
     Qt, QDate
@@ -89,6 +89,8 @@ class Dashboard(QMainWindow):
         self.table2 = QTableWidget()
         self.table2_layout.addWidget(self.table2)
         self.tables_layout.addLayout(self.table2_layout, stretch=5)
+        self.table2.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table2.customContextMenuRequested.connect(self.show_context_menu)
 
         # Gráfico
         self.figure = Figure()
@@ -96,6 +98,19 @@ class Dashboard(QMainWindow):
         self.layout.addWidget(self.canvas)
 
         self.load_data()
+
+    def show_context_menu(self, position):
+        index = self.table2.indexAt(position)
+        row = index.row()
+        if row >= 0:  
+            menu = QMenu(self)
+            action = menu.addAction("Ver itens do cupom")
+            action.triggered.connect(lambda: self.on_row_action(row))
+            menu.exec(self.table2.viewport().mapToGlobal(position))  
+
+    def on_row_action(self, row):
+        child = ChildWindow(row_number=row, parent=self)
+        child.show()
 
     def get_cupons(self):
         
@@ -113,15 +128,11 @@ class Dashboard(QMainWindow):
                 e.endereco
             from cupom c
             join emitente e on c.cnpj_emitente = e.cnpj
-            where (
-                substr(c.data_hora_emissao, 5, 2) 
-                || '/' || 
-                substr(c.data_hora_emissao, 1, 4)
-            ) = ?
+            where c.id in({})
             order by c.data_hora_emissao
         """
-        filtro = self.table.item(selected_rows[0].row(), 0).text()
-        self.cursor.execute(SELECT_CUPOM, (filtro, ))
+        filtro = self.table.item(selected_rows[0].row(), 3).text()
+        self.cursor.execute(SELECT_CUPOM.format(filtro))
         rows = self.cursor.fetchall()
 
         # Atualizar tabela
@@ -148,11 +159,12 @@ class Dashboard(QMainWindow):
         data_fim = data_fim.strftime("%Y%m%d235959")
 
         SELECT_CUPOM = """
-            select 
+            select                
                 substr(c.data_hora_emissao, 5, 2) || '/' ||
                 substr(c.data_hora_emissao, 1, 4) as data,   
                 round(sum(c.valor_total), 2) as valor_total,
-                count(c.id) as qtde_cupons
+                count(c.id) as qtde_cupons,
+                group_concat(c.id) as cupom_ids
             from cupom c
             where c.data_hora_emissao between ? and ?
             group by substr(c.data_hora_emissao, 1, 6)
@@ -162,9 +174,9 @@ class Dashboard(QMainWindow):
         rows = self.cursor.fetchall()
 
         self.table.setRowCount(len(rows))
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Mês/Ano", "Valor", "Cupons"])
-
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["Mês/Ano", "Valor", "Cupons", "cupom_ids"])
+        self.table.setColumnHidden(3, True)
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
                 item = QTableWidgetItem(str(val))
@@ -207,6 +219,24 @@ class Dashboard(QMainWindow):
         ax1.set_title("Cupons agrupados por mês/ano")
 
         self.canvas.draw()
+
+class ChildWindow(QDialog):
+    def __init__(self, row_number=0, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Janela Filha - Linha {row_number}")
+
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.WindowStaysOnTopHint |
+            Qt.WindowCloseButtonHint
+        )
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel(f"Você abriu a janela filha para a linha {row_number}"))
+        self.setLayout(layout)
+
+        self.resize(300, 100)    
 
 
 if __name__ == "__main__":
