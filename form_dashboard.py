@@ -81,16 +81,18 @@ class Dashboard(QMainWindow):
         self.tables_layout.addLayout(self.table_layout, stretch=2)
         self.table.itemSelectionChanged.connect(self.get_cupons)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.table_show_context_menu)
+
         self.table2_layout = QVBoxLayout()
         self.table2_layout.addWidget(QLabel(
-            "Listagem analítica de cupons, clique com direito para mais opções.")
+            "Listagem analítica de cupons:")
         )
         self.table2 = QTableWidget()
         self.table2_layout.addWidget(self.table2)
         self.tables_layout.addLayout(self.table2_layout, stretch=5)
         self.table2.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.table2.customContextMenuRequested.connect(self.show_context_menu)
+        self.table2.customContextMenuRequested.connect(self.table2_show_context_menu)
 
         # Gráfico
         self.figure = Figure()
@@ -99,16 +101,35 @@ class Dashboard(QMainWindow):
 
         self.load_data()
 
-    def show_context_menu(self, position):
+    def table_show_context_menu(self, position):
+        index = self.table.indexAt(position)
+        id_list = self.table.item(index.row(), 3).text() if index.isValid() else None
+        if id_list is not None:  
+            menu = QMenu(self)
+            action = menu.addAction("Produtos por Valor - Gráfico Pizza")
+            action.triggered.connect(lambda: self.table_grafico_pizza(id_list))
+            action = menu.addAction("Produtos por Valor - Tabela")
+            action.triggered.connect(lambda: self.table_produtos_valor(id_list))
+            menu.exec(self.table.viewport().mapToGlobal(position))
+
+    def table2_show_context_menu(self, position):
         index = self.table2.indexAt(position)
         id_cupom = self.table2.item(index.row(), 4).text() if index.isValid() else None
         if id_cupom is not None:  
             menu = QMenu(self)
             action = menu.addAction("Ver itens do cupom")
-            action.triggered.connect(lambda: self.on_row_action(id_cupom))
+            action.triggered.connect(lambda: self.table2_ver_itens(id_cupom))
             menu.exec(self.table2.viewport().mapToGlobal(position))  
+    
+    def table_grafico_pizza(self, id_list):
+        child = DashboardPie(parent=self, cursor=self.cursor, id_list=id_list)
+        child.show()
 
-    def on_row_action(self, id_cupom):
+    def table_produtos_valor(self, id_list):
+        child = DashboardProdutosValor(parent=self, cursor=self.cursor, id_list=id_list)
+        child.show()
+
+    def table2_ver_itens(self, id_cupom):
         child = DashboardItens(parent=self, cursor=self.cursor, id_cupom=id_cupom)
         child.show()
 
@@ -298,7 +319,6 @@ class DashboardItens(QMainWindow):
             "Seq", "Código", "Descrição", "Qtde", "Un", 
             "Valor Unit", "Valor Total", "Desconto"
         ])
-
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
                 item = QTableWidgetItem(str(val))
@@ -308,8 +328,6 @@ class DashboardItens(QMainWindow):
                 self.table.setItem(i, j, item)
         self.table.resizeColumnsToContents()
         self.setMinimumWidth(800)
-
-
 
     def add_field(self, layout, label_text, default_value, stretch=0):
         field_layout = QVBoxLayout()
@@ -329,6 +347,105 @@ class DashboardItens(QMainWindow):
         else:
             layout.addLayout(field_layout)
 
+class DashboardPie(QMainWindow):
+    def __init__(self, parent, cursor, id_list):
+        super().__init__(parent)
+        
+        SELECT_PRODUTOS = """
+            select 
+                i.descricao,
+                sum(valor_total-desconto) as total
+            from cupom_item i
+            where i.id_cupom in ({})
+            group by i.descricao
+            order by total desc
+        """.format(id_list)
+
+        cursor.execute(SELECT_PRODUTOS)
+        rows = cursor.fetchall()
+
+        self.setWindowTitle("Produtos por Valor")
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.WindowStaysOnTopHint |
+            Qt.WindowCloseButtonHint
+        )
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        self.setCentralWidget(main_widget)
+
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        main_layout.addWidget(self.canvas)
+
+        ax = self.figure.add_subplot(111)
+        ax.clear()
+
+        nomes = [row[0] for row in rows]
+        valores = [row[1] for row in rows]
+        TOP = 9  # Número máximo de produtos a serem exibidos
+        n = [nome for i, nome in enumerate(nomes) if i < TOP]
+        v = [valor for i, valor in enumerate(valores) if i < TOP]
+        n.append("Outros")
+        v.append(sum(valores) - sum(v))
+
+        ax.pie(v, labels=n, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')        
+
+        self.canvas.draw()
+        self.resize(800, 600)
+
+class DashboardProdutosValor(QMainWindow):
+    def __init__(self, parent, cursor, id_list):
+        super().__init__(parent)
+        
+        SELECT_PRODUTOS = """
+            select 
+                i.codigo,
+                i.descricao,
+                round(sum(valor_total-desconto), 2) as total,
+                round(sum(qtde), 3) as qtde,
+                count(i.codigo) as vezes,
+                count(distinct i.id_cupom) as cupons
+            from cupom_item i
+            where i.id_cupom in ({})
+            group by i.descricao
+            order by total desc
+        """.format(id_list)
+
+        cursor.execute(SELECT_PRODUTOS)
+        rows = cursor.fetchall()
+        self.setWindowTitle("Produtos por Valor")
+        self.setWindowFlags(
+            Qt.Window |
+            Qt.WindowStaysOnTopHint |
+            Qt.WindowCloseButtonHint
+        )
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        main_widget = QWidget()
+        main_layout = QVBoxLayout(main_widget)
+        self.setCentralWidget(main_widget)
+        
+        self.table = QTableWidget()
+        main_layout.addWidget(self.table)
+
+        self.table.setRowCount(len(rows))
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels(["Código", "Produto", "Total", "Qtde", "Vezes", "Cupons"])
+        self.table.setColumnWidth(0, 300)
+        self.table.setColumnWidth(1, 100)  
+        for i, row in enumerate(rows):
+            for j, val in enumerate(row):
+                item = QTableWidgetItem(str(val))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                if j in [2, 3, 4, 5]:
+                    item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+                self.table.setItem(i, j, item)
+        self.table.resizeColumnsToContents()
+        self.resize(800, 600)   
 
 
 if __name__ == "__main__":
