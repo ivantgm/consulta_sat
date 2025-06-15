@@ -6,6 +6,7 @@ import json
 
 SAVE_HTML = True
 SAVE_JSON_RESULT = True
+PROCESSA_DETALHES = True
 
 def consulta_sat(chave_acesso, aguardar_consulta_callback=None):
 	if sys.platform == "linux":
@@ -82,6 +83,21 @@ def consulta_sat(chave_acesso, aguardar_consulta_callback=None):
 			'desconto': None
 		}
 		result["itens"].append(item)
+
+	if PROCESSA_DETALHES:
+		elem = driver.find_element(By.ID, "conteudo_btnDetalhe")
+		elem.click()
+
+		elem = driver.find_element(By.ID, "conteudo_tabProdutoServico")
+		elem.click()
+
+		for i, item in enumerate(result["itens"]):				
+			elem = driver.find_element(By.ID, 
+				f"conteudo_grvProdutosServicos_lblProdutoServicoGtin_{i}"
+			)
+			if elem.text.isdigit():
+				item['codigo'] = elem.text
+			
 	
 	driver.quit()
 
