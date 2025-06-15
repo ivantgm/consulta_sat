@@ -97,6 +97,12 @@ def consulta_sat(chave_acesso, aguardar_consulta_callback=None):
 			)
 			if elem.text.isdigit():
 				item['codigo'] = elem.text
+
+		if SAVE_HTML:	
+			if not os.path.exists("./html"):
+				os.makedirs("./html")
+			with open(f"./html/{chave_acesso}-det.html", "w", encoding="utf-8") as file:
+				file.write(driver.page_source)				
 			
 	
 	driver.quit()
