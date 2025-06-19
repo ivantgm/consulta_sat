@@ -2,7 +2,8 @@ import sys
 import sqlite3
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QTableWidget, QTableWidgetItem,
-    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy, QMenu, QFrame, QLineEdit
+    QDateEdit, QPushButton, QLabel, QHBoxLayout, QSizePolicy, QMenu, QFrame, QLineEdit,
+    QComboBox, QDialog, QCompleter
 )
 from PySide6.QtCore import (
     Qt, QDate
@@ -70,6 +71,11 @@ class Dashboard(QMainWindow):
         self.button_filtrar_layout.addWidget(self.filter_button)
         self.filter_layout.addLayout(self.button_filtrar_layout)
 
+        self.locate_button = QPushButton("Localizar")
+        self.locate_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.locate_button.clicked.connect(self.locate)
+        self.button_filtrar_layout.addWidget(self.locate_button)
+
         # Tabela de dados
         self.tables_layout = QHBoxLayout()
         self.layout.addLayout(self.tables_layout)
@@ -133,11 +139,12 @@ class Dashboard(QMainWindow):
         child = DashboardItens(parent=self, cursor=self.cursor, id_cupom=id_cupom)
         child.show()
 
-    def get_cupons(self):
+    def get_cupons(self, filtro=None):
         
-        selected_rows = self.table.selectionModel().selectedRows()
-        if not selected_rows:
-            return
+        if filtro is None:
+            selected_rows = self.table.selectionModel().selectedRows()
+            if not selected_rows:
+                return
         
         SELECT_CUPOM = """
             select 
@@ -153,7 +160,8 @@ class Dashboard(QMainWindow):
             where c.id in({})
             order by c.data_hora_emissao
         """
-        filtro = self.table.item(selected_rows[0].row(), 3).text()
+        if filtro is None:
+            filtro = self.table.item(selected_rows[0].row(), 3).text()
         self.cursor.execute(SELECT_CUPOM.format(filtro))
         rows = self.cursor.fetchall()
 
@@ -172,6 +180,41 @@ class Dashboard(QMainWindow):
                 self.table2.setItem(i, j, item)
 
         self.table2.resizeColumnsToContents()
+
+    def locate(self):
+        dialog = DashboardLocalizar(parent=self, cursor=self.cursor)
+        if dialog.exec():  
+            data_inicio = dialog.input_data_inicial.date().toPython().strftime("%Y%m%d000000")
+            data_fim = dialog.input_data_final.date().toPython().strftime("%Y%m%d235959")
+            cnpj_emitente = dialog.combo_emitente.currentData() 
+            produto = dialog.input_produto.text()
+            chave_acesso = dialog.input_chave_acesso.text() 
+
+            produto_condition = ""
+            if produto:
+                palavras = produto.split()
+                produto_condition = " and (" + " or ".join(
+                    f"i.descricao like '%{palavra}%'" for palavra in palavras 
+                ) + ")"
+
+            SELECT_CUPOM = """
+                select group_concat(c.id)
+                from cupom c
+                left outer join cupom_item i on i.id_cupom = c.id
+                where (1)
+                {}
+                {}
+                {}
+                {}
+            """.format(
+                f"and c.data_hora_emissao between '{data_inicio}' and '{data_fim}'",
+                f"and c.cnpj_emitente = '{cnpj_emitente}'" if cnpj_emitente else "",
+                f"and c.chave_acesso = '{chave_acesso}'" if chave_acesso else "",
+                produto_condition
+            )
+            self.cursor.execute(SELECT_CUPOM)
+            id_list = self.cursor.fetchone()[0]
+            self.get_cupons(filtro=id_list)  
 
     def load_data(self):
 
@@ -445,8 +488,125 @@ class DashboardProdutosValor(QMainWindow):
                     item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.table.setItem(i, j, item)
         self.table.resizeColumnsToContents()
-        self.resize(800, 600)   
+        self.resize(800, 600)
 
+class DashboardLocalizar(QDialog):
+    def __init__(self, parent, cursor):
+        super().__init__(parent)
+        self.cursor = cursor
+        self.setWindowTitle("Pesquisa de Cupons")
+        self.setModal(True)
+
+        layout_principal = QVBoxLayout(self)
+        painel_client = QWidget()
+        layout_client = QVBoxLayout(painel_client)
+        
+        data_i = QDate.currentDate().addMonths(-3)
+        data_i = QDate(
+            data_i.year(),
+            data_i.month(),
+            1
+        ) 
+        data_f = QDate.currentDate()
+        data_f = QDate(
+            data_f.year(),
+            data_f.month(),
+            data_f.daysInMonth()
+        )               
+        # linha com o periodo
+        layout = QHBoxLayout()        
+        field_layout = QVBoxLayout()
+        lbl_data_inicial = QLabel("Data Inicial:")
+        self.input_data_inicial = QDateEdit()
+        self.input_data_inicial.setCalendarPopup(True)
+        self.input_data_inicial.setDate(data_i)
+        field_layout.addWidget(lbl_data_inicial)
+        field_layout.addWidget(self.input_data_inicial)
+        container = QWidget()
+        container.setLayout(field_layout) 
+        layout.addWidget(container, 1)
+        # ----------
+        field_layout = QVBoxLayout()
+        lbl_data_final = QLabel("Data Final:")
+        self.input_data_final = QDateEdit()
+        self.input_data_final.setCalendarPopup(True)
+        self.input_data_final.setDate(data_f)
+        field_layout.addWidget(lbl_data_final)
+        field_layout.addWidget(self.input_data_final)
+        container = QWidget()
+        container.setLayout(field_layout)         
+        layout.addWidget(container, 1)
+        # ----------
+        layout_client.addLayout(layout)
+        # fim da linha com o periodo
+
+        lbl_emitente = QLabel("Emitente:")
+        self.combo_emitente = QComboBox()
+        self.get_emitentes()
+        layout_client.addWidget(lbl_emitente)
+        layout_client.addWidget(self.combo_emitente)
+
+        lbl_produto = QLabel("Produto:")
+        self.input_produto = QLineEdit()
+        layout_client.addWidget(lbl_produto)
+        layout_client.addWidget(self.input_produto)
+        lista_produtos = self.get_produtos()
+
+        completer = QCompleter(lista_produtos)
+        completer.setFilterMode(Qt.MatchContains)
+        completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.input_produto.setCompleter(completer)
+
+        lbl_chave_acesso = QLabel("Chave de Acesso:")
+        self.input_chave_acesso = QLineEdit()
+        layout_client.addWidget(lbl_chave_acesso)
+        layout_client.addWidget(self.input_chave_acesso)
+
+        layout_principal.addWidget(painel_client)
+
+        painel_bottom = QWidget()
+        layout_bottom = QHBoxLayout(painel_bottom)
+        btn_localizar = QPushButton("Localizar")
+        btn_cancelar = QPushButton("Cancelar")
+        btn_localizar.clicked.connect(self.accept)
+        btn_cancelar.clicked.connect(self.reject)
+        layout_bottom.addStretch() 
+        layout_bottom.addWidget(btn_localizar)
+        layout_bottom.addWidget(btn_cancelar)
+        layout_principal.addWidget(painel_bottom)
+
+    def get_emitentes(self):
+        SELECT_EMITENTES = """
+            SELECT fantasia || ' - ' || endereco, cnpj
+            FROM emitente 
+            ORDER BY fantasia
+        """
+        self.cursor.execute(SELECT_EMITENTES)
+        rows = self.cursor.fetchall()
+        self.combo_emitente.clear()
+        self.combo_emitente.addItem("Todos", "")
+        for row in rows:
+            self.combo_emitente.addItem(row[0], row[1])
+
+    def get_produtos(self):
+        SELECT_PRODUTOS = """
+            SELECT descricao
+            FROM cupom_item
+            GROUP BY descricao
+            ORDER BY descricao
+        """
+        self.cursor.execute(SELECT_PRODUTOS)
+        rows = self.cursor.fetchall()
+        produtos = [row[0] for row in rows]
+        result = []
+        for produto in produtos:
+            palavras = produto.split()
+            for palavra in palavras:
+                if len(palavra) > 3:  
+                    if palavra not in result:
+                        result.append(palavra)
+        result.sort()
+        return result
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
