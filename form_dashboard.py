@@ -10,6 +10,8 @@ from PySide6.QtCore import (
 )
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from prettytable import PrettyTable
+import pyperclip
 
 class Dashboard(QMainWindow):
     def __init__(self):
@@ -348,7 +350,8 @@ class DashboardItens(QMainWindow):
                 i.un,
                 i.valor_unit,
                 i.valor_total,
-                i.desconto
+                i.desconto,
+                round(i.valor_total - i.desconto, 2) as valor_liquido
             from cupom_item i
             where i.id_cupom = ?
             order by i.seq
@@ -357,20 +360,56 @@ class DashboardItens(QMainWindow):
         rows = cursor.fetchall()
 
         self.table.setRowCount(len(rows))
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(9)
         self.table.setHorizontalHeaderLabels([
             "Seq", "Código", "Descrição", "Qtde", "Un", 
-            "Valor Unit", "Valor Total", "Desconto"
+            "Valor Unit", "Valor Total", "Desconto", "Valor Líquido"
         ])
         for i, row in enumerate(rows):
             for j, val in enumerate(row):
                 item = QTableWidgetItem(str(val))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                if j in [3, 5, 6, 7]:  
+                if j in [3, 5, 6, 7, 8]:  
                     item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
                 self.table.setItem(i, j, item)
         self.table.resizeColumnsToContents()
         self.setMinimumWidth(800)
+
+        btn_copy = QPushButton("Copiar Tabela")
+        def copy_table():
+            table = PrettyTable()
+            
+            headers = [self.table.horizontalHeaderItem(i).text() for i in range(self.table.columnCount())]
+            table.field_names = headers
+            for row in range(self.table.rowCount()):
+                row_data = []
+                for col in range(self.table.columnCount()):
+                    item = self.table.item(row, col)
+                    row_data.append(item.text() if item else "")
+                table.add_row(row_data)
+            total_liquido = 0
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, 8)
+                if item:
+                    try:
+                        total_liquido += float(item.text().replace(',', '.'))
+                    except ValueError:
+                        pass
+            total_row = [""] * self.table.columnCount()
+            total_row[2] = "TOTAL"
+            total_row[8] = f"{total_liquido:.2f}"
+            table.add_row(total_row)
+
+            for idx in [3, 5, 6, 7, 8]:
+                if idx < len(headers):
+                    table.align[headers[idx]] = "r"
+            for idx in [0, 1, 2, 4]:
+                if idx < len(headers):
+                    table.align[headers[idx]] = "l"
+            pyperclip.copy(table.get_string())
+
+        btn_copy.clicked.connect(copy_table)
+        main_layout.addWidget(btn_copy)
 
     def add_field(self, layout, label_text, default_value, stretch=0):
         field_layout = QVBoxLayout()
