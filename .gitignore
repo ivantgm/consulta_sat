@@ -2,6 +2,7 @@
 html/
 json/
 chaves.txt
+urls.txt
 banco.db
 banco.db-journal
 
@@ -179,3 +180,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
