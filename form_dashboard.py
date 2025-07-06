@@ -398,14 +398,14 @@ class DashboardItens(QMainWindow):
             total_row = [""] * self.table.columnCount()
             total_row[2] = "TOTAL"
             total_row[8] = f"{total_liquido:.2f}"
+            table.add_row(["-" * len(h) for h in headers])
             table.add_row(total_row)
 
-            for idx in [3, 5, 6, 7, 8]:
-                if idx < len(headers):
-                    table.align[headers[idx]] = "r"
-            for idx in [0, 1, 2, 4]:
-                if idx < len(headers):
-                    table.align[headers[idx]] = "l"
+            for idx, header in enumerate(headers):
+                if idx in [3, 5, 6, 7, 8]:
+                    table.align[header] = "r"
+                else:
+                    table.align[header] = "l"
             pyperclip.copy(table.get_string())
 
         btn_copy.clicked.connect(copy_table)
