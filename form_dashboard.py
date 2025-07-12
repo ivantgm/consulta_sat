@@ -377,13 +377,18 @@ class DashboardItens(QMainWindow):
 
         btn_copy = QPushButton("Copiar Tabela")
         def copy_table():
-            table = PrettyTable()
-            
+            count_selected = 0
+            for row in range(self.table.rowCount()):
+                if self.table.item(row, 0).isSelected():
+                    count_selected += 1            
+
+            table = PrettyTable()            
             headers = [self.table.horizontalHeaderItem(i).text() for i in range(self.table.columnCount())]
             table.field_names = headers
             for row in range(self.table.rowCount()):
-                if not self.table.item(row, 0).isSelected():
-                    continue
+                if count_selected != 0:
+                    if not self.table.item(row, 0).isSelected():
+                        continue
                 row_data = []
                 for col in range(self.table.columnCount()):
                     item = self.table.item(row, col)
@@ -391,8 +396,9 @@ class DashboardItens(QMainWindow):
                 table.add_row(row_data)
             total_liquido = 0
             for row in range(self.table.rowCount()):
-                if not self.table.item(row, 0).isSelected():
-                    continue
+                if count_selected != 0:
+                    if not self.table.item(row, 0).isSelected():
+                        continue
                 item = self.table.item(row, 8)
                 if item:
                     try:
