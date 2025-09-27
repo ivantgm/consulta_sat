@@ -26,15 +26,64 @@ def consulta_nfce(url):
     chave_acesso = url.split("p=")[1].split("|")[0] 
 
     if SAVE_HTML:
-        if not os.path.exists("./html"):
-            os.makedirs("./html")          
-        with open(f"./html/{chave_acesso}.html", "w", encoding="utf-8") as f:
+        if not os.path.exists("./html-nfce"):
+            os.makedirs("./html-nfce")          
+        with open(f"./html-nfce/{chave_acesso}.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
 
+
+
+    labels = driver.find_elements(By.TAG_NAME, "label")
+    data_hora_emissao = None
+    numero_cfe = None
+    serie_cfe = None
+    valor_total = None
+    obs = None
+    emitente_cnpj = None
+    emitente_ie = None
+    for label in labels:
+        if label.text == "":
+            continue
+        elif label.text == "Data de Emissão":
+            td = label.find_element(By.XPATH, "..")
+            data_hora_emissao = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "Número":
+            td = label.find_element(By.XPATH, "..")
+            numero_cfe = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "Série":
+            td = label.find_element(By.XPATH, "..")
+            serie_cfe = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "Valor Total da Nota Fiscal  ":
+            td = label.find_element(By.XPATH, "..")
+            valor_total = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "CNPJ":
+            td = label.find_element(By.XPATH, "..")
+            emitente_cnpj = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "Inscrição Estadual":
+            td = label.find_element(By.XPATH, "..")
+            emitente_ie = td.find_element(By.TAG_NAME, "span").text
+        elif label.text == "Nome / Razão Social":
+            td = label.find_element(By.XPATH, "..")
+            emitente_nome = td.find_element(By.TAG_NAME, "span").text
+
+    result = {		
+		'data_hora_emissao': data_hora_emissao,
+        'numero_cfe': numero_cfe,
+        'serie_cfe': serie_cfe,
+        'chave_acesso': chave_acesso,
+        'valor_total': valor_total,
+        'obs': obs,
+		'emitente': {
+			'cnpj': emitente_cnpj,
+			'ie': emitente_ie,
+			'nome': emitente_nome
+        },
+		'itens': []
+	}
+    
     tabProdServ = driver.find_element(By.ID, "__tab_Conteudo_pnlNFe_tabProdServ")        
     tabProdServ.click()
 
-    itens = []
     div_prod = driver.find_element(By.ID, "Prod")
     tables = div_prod.find_elements(By.TAG_NAME, "table")
     seq = None
@@ -110,7 +159,7 @@ def consulta_nfce(url):
                     'valor_total': valor_total,
                     'desconto': desconto
                 }
-                itens.append(item)
+                result["itens"].append(item)
                 seq = None
                 codigo = None
                 descricao = None
@@ -122,10 +171,10 @@ def consulta_nfce(url):
                 desconto = None                 
 
     if SAVE_JSON_RESULT:
-        if not os.path.exists("./json"):
-            os.makedirs("./json")
-        with open(f"./json/{chave_acesso}.json", "w", encoding="utf-8") as file:
-            json.dump(itens, file)
+        if not os.path.exists("./json-nfce"):
+            os.makedirs("./json-nfce")
+        with open(f"./json-nfce/{chave_acesso}.json", "w", encoding="utf-8") as file:
+            json.dump(result, file)
 
 
     driver.quit()

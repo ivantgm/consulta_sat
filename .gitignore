@@ -1,6 +1,8 @@
 #arquivos temporarios gerados
 html/
 json/
+html-nfce/
+json-nfce/
 chaves.txt
 urls.txt
 banco.db
