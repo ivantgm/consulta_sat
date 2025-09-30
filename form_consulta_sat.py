@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 )
 import sys
 import selenium_sat
+import consulta_nfce
 import sqlite_sat 
 
 class FormConsultaSAT(QMainWindow):
@@ -41,9 +42,13 @@ class FormConsultaSAT(QMainWindow):
         button_layout = QVBoxLayout(button_panel)
         top_layout.addWidget(button_panel)
 
-        self.consult_button = QPushButton("Consultar")
+        self.consult_button = QPushButton("Consultar SAT")
         button_layout.addWidget(self.consult_button)
         self.consult_button.clicked.connect(self.on_consult_button_clicked)
+
+        self.consult_nfce_button = QPushButton("Consultar NFC-E")
+        button_layout.addWidget(self.consult_nfce_button)
+        self.consult_nfce_button.clicked.connect(self.on_consult_nfce_button_clicked)
 
         client_panel = QWidget()
         client_layout = QVBoxLayout(client_panel)
@@ -91,7 +96,12 @@ class FormConsultaSAT(QMainWindow):
                         msg_box.show()
                         app.processEvents() 
                         msg_box.exec()
-                    self.add_cupom_memoria(selenium_sat.consulta_sat(key.strip(), call_back))    
+                    self.add_cupom_memoria(selenium_sat.consulta_sat(key.strip(), call_back))  
+
+    def on_consult_nfce_button_clicked(self): 
+            keys = self.text_edit.toPlainText().splitlines()
+            for key in keys:
+                self.add_cupom_memoria(consulta_nfce.consulta_nfce(key.strip()))
 
     def add_cupom_memoria(self, cupom):
         self.cupons_lidos.append(cupom)

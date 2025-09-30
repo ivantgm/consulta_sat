@@ -1,0 +1,161 @@
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import sys
+import os
+import time
+import json
+import requests
+import bs4
+from datetime import datetime
+
+SAVE_HTML = True
+SAVE_JSON_RESULT = True
+PROCESSA_DETALHES = True
+
+def tirar_virgula(text: str) -> str:
+	return " ".join(text.split()).replace('\n', '').replace('\u00a0', '')
+
+def get_html(url: str) -> str:
+	response = requests.get(url)
+
+	if response.status_code != 200:
+		print(f"Erro em adquirir o HTML do url {url}. Código do erro: {response.status_code}")
+		return None
+	
+	return response.text
+
+def consulta_nfce(url):
+	html_id = url[-40:]
+
+	result = dict()
+	result["obs"] = ""
+	result["emitente"] = dict()
+	result["consumidor"] = dict()
+	result["itens"] = list()
+
+	# como a página tem dados resumidos,
+	# precisamos pegar o endereço de redirecionamento do botão "Visualizar em abas"
+	# nesse site, terá os dados completos
+
+	if sys.platform == "linux":
+		geckodriver_path = '/snap/bin/geckodriver' #To get the geckodriver path run `$ which geckodriver` in shell
+		driver_service = webdriver.FirefoxService(executable_path=geckodriver_path)
+		driver = webdriver.Firefox(service=driver_service)
+	else:
+		driver = webdriver.Firefox()
+
+	driver.set_window_size(700, 700)
+	driver.get(url)
+
+	time.sleep(1)
+
+	btnVisualizarAbas = driver.find_element(By.NAME, "btnVisualizarAbas")
+	btnVisualizarAbas.click()
+
+	time.sleep(1)
+
+	html_src = driver.page_source
+	driver.quit()
+
+	if SAVE_HTML:
+		if not os.path.exists("./html"):
+			os.makedirs("./html")
+		with open(f"./html/{html_id}.html", "w", encoding="utf-8") as file:
+			file.write(html_src)
+
+	html = bs4.BeautifulSoup(html_src, features="html.parser")
+
+	tables = html.find_all("table")
+
+	# Cabeçalho
+	table = tables[0]
+
+	tds = table.find_all("td")
+
+	result["chave_acesso"] = tds[3].get_text()
+
+	# Dados da NF-e
+	table = tables[1]
+
+	spans = table.find_all("span")
+
+	result["numero_cfe"]        = spans[2].get_text()
+	result["numero_serie_sat"]  = spans[1].get_text()
+	result["data_hora_emissao"] = spans[3].get_text().replace(' ', " - ")[:-6]
+	result["valor_total"]       = spans[5].get_text()
+
+	# Dados do Emitente
+	table = tables[5]
+
+	spans = table.find_all("span")
+
+	result["emitente"]["cnpj"]      = spans[2].get_text()
+	result["emitente"]["ie"]        = spans[10].get_text()
+	result["emitente"]["im"]        = spans[11].get_text()
+	result["emitente"]["nome"]      = spans[0].get_text()
+	result["emitente"]["fantasia"]  = spans[1].get_text()
+	result["emitente"]["endereco"]  = tirar_virgula(spans[3].get_text())
+	result["emitente"]["bairro"]    = spans[4].get_text()
+	result["emitente"]["cep"]       = spans[5].get_text()
+	result["emitente"]["municipio"] = tirar_virgula(spans[3].get_text())
+
+	spans = table.find_all("span")
+
+	# Dados do Destinatário
+	table = tables[6]
+
+	spans = table.find_all("span")
+
+	result["consumidor"]["cpf_consumidor"]          = spans[1].get_text()
+	result["consumidor"]["razao_social_consumidor"] = spans[0].get_text()
+
+	# Totais
+	table = html.find("div", id="Conteudo_pnlNFe_tabTotais").find("table")
+
+	spans = table.find_all("span")
+
+	result["total_tributos"] = spans[-1].get_text()
+
+	toggle_boxes = html.find_all("table", class_="toggle box")
+	toggable_boxes = html.find_all("table", class_="toggable box")
+
+	for i in range(len(toggable_boxes) - 1):
+		item = dict()
+
+		spans = toggle_boxes[i].find_all("span")
+
+		item["seq"]         = spans[0].get_text()
+		item["descricao"]   = spans[1].get_text()
+		item["qtde"]        = spans[2].get_text()
+		item["un"]          = spans[3].get_text()
+		item["valor_total"] = spans[4].get_text()
+
+		spans = toggable_boxes[i].find_all("span")
+
+		item["codigo"]      = spans[0].get_text()
+		item["desconto"]    = spans[9].get_text().replace('\n', '')
+		if item["desconto"] == "":
+			item["desconto"] = "00,00"	
+
+		item["valor_unit"]  = spans[19].get_text()
+		item["tributos"]    = spans[23].get_text()
+
+		if PROCESSA_DETALHES:
+			item["codigo"] = spans[13].get_text()
+
+		result["itens"].append(item)
+
+	if SAVE_JSON_RESULT:
+		if not os.path.exists("./json"):
+			os.makedirs("./json")
+		with open(f"./json/{html_id}.json", "w", encoding="utf-8") as file:
+			json.dump(result, file)
+
+	if __name__ == "__main__":
+		print(json.dumps(result, indent=4))
+	else:
+		return result
+
+if __name__ == "__main__":
+	url = "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=35250753045266000621652350000008521004632337|2|1|1|efaaf73bcc067dbfee9033d4b8771a21929907ab"
+	consulta_nfce(url)
