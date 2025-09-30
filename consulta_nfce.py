@@ -157,5 +157,5 @@ def consulta_nfce(url):
 		return result
 
 if __name__ == "__main__":
-	url = "https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaQRCode.aspx?p=35250753045266000621652350000008521004632337|2|1|1|efaaf73bcc067dbfee9033d4b8771a21929907ab"
+	url = input("Informe o URL do cupom: ")
 	consulta_nfce(url)
