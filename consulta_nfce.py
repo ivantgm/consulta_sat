@@ -4,9 +4,8 @@ import sys
 import os
 import time
 import json
-import requests
 import bs4
-from datetime import datetime
+import re
 
 SAVE_HTML = True
 SAVE_JSON_RESULT = True
@@ -15,18 +14,7 @@ PROCESSA_DETALHES = True
 def tirar_virgula(text: str) -> str:
 	return " ".join(text.split()).replace('\n', '').replace('\u00a0', '')
 
-def get_html(url: str) -> str:
-	response = requests.get(url)
-
-	if response.status_code != 200:
-		print(f"Erro em adquirir o HTML do url {url}. Código do erro: {response.status_code}")
-		return None
-	
-	return response.text
-
 def consulta_nfce(url):
-	html_id = url[-40:]
-
 	result = dict()
 	result["obs"] = ""
 	result["emitente"] = dict()
@@ -57,12 +45,6 @@ def consulta_nfce(url):
 	html_src = driver.page_source
 	driver.quit()
 
-	if SAVE_HTML:
-		if not os.path.exists("./html"):
-			os.makedirs("./html")
-		with open(f"./html/{html_id}.html", "w", encoding="utf-8") as file:
-			file.write(html_src)
-
 	html = bs4.BeautifulSoup(html_src, features="html.parser")
 
 	tables = html.find_all("table")
@@ -72,7 +54,14 @@ def consulta_nfce(url):
 
 	tds = table.find_all("td")
 
-	result["chave_acesso"] = tds[3].get_text()
+	chave_acesso = re.sub(r'[^0-9]', '', tds[3].get_text())
+	result["chave_acesso"] = chave_acesso
+
+	if SAVE_HTML:
+		if not os.path.exists("./html"):
+			os.makedirs("./html")
+		with open(f"./html/{chave_acesso}.html", "w", encoding="utf-8") as file:
+			file.write(html_src)
 
 	# Dados da NF-e
 	table = tables[1]
@@ -119,10 +108,13 @@ def consulta_nfce(url):
 	toggle_boxes = html.find_all("table", class_="toggle box")
 	toggable_boxes = html.find_all("table", class_="toggable box")
 
-	for i in range(len(toggable_boxes) - 1):
-		item = dict()
-
+	for i in range(len(toggable_boxes)):
 		spans = toggle_boxes[i].find_all("span")
+
+		if not spans[0].get_text().isdigit():
+			break
+
+		item = dict()
 
 		item["seq"]         = spans[0].get_text()
 		item["descricao"]   = spans[1].get_text()
@@ -141,14 +133,15 @@ def consulta_nfce(url):
 		item["tributos"]    = spans[23].get_text()
 
 		if PROCESSA_DETALHES:
-			item["codigo"] = spans[13].get_text()
+			if spans[13].get_text() != "SEM GTIN":
+				item["codigo"] = spans[13].get_text()
 
 		result["itens"].append(item)
 
 	if SAVE_JSON_RESULT:
 		if not os.path.exists("./json"):
 			os.makedirs("./json")
-		with open(f"./json/{html_id}.json", "w", encoding="utf-8") as file:
+		with open(f"./json/{chave_acesso}.json", "w", encoding="utf-8") as file:
 			json.dump(result, file)
 
 	if __name__ == "__main__":
