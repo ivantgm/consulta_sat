@@ -104,6 +104,10 @@ def consulta_nfce(url):
 	spans = table.find_all("span")
 
 	result["total_tributos"] = spans[-1].get_text()
+	try:
+		float(result["total_tributos"][:].replace(',', '.'))
+	except ValueError:
+		result["total_tributos"] = "00,00"
 
 	toggle_boxes = html.find_all("table", class_="toggle box")
 	toggable_boxes = html.find_all("table", class_="toggable box")
@@ -131,6 +135,8 @@ def consulta_nfce(url):
 
 		item["valor_unit"]  = spans[19].get_text()
 		item["tributos"]    = spans[23].get_text()
+		if item["tributos"] == '\n':
+			item["tributos"] = "00,00"
 
 		if PROCESSA_DETALHES:
 			if spans[13].get_text() != "SEM GTIN":
