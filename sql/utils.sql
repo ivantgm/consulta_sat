@@ -87,3 +87,10 @@ left outer join cupom c on c.id = i.id_cupom
 left outer join emitente e on e.cnpj = c.cnpj_emitente
 where i.codigo = '2332'
 order by c.data_hora_emissao desc
+
+-----------------------------------------------------------
+-- obter o modelo do documento fiscal a partir da chave de acesso
+-- posição 21 e 22 da chave de acesso
+-----------------------------------------------------------
+select substr(chave_acesso, 21, 2) modelo_59_65
+from cupom
