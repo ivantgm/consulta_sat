@@ -2,6 +2,8 @@ import sqlite3
 
 nfces = []
 sats = []
+nfces_lines = dict()
+sats_lines = dict()
 
 f = open("urls.txt", "r")
 for line in f:
@@ -9,6 +11,7 @@ for line in f:
     if idx != -1:
         chave = line[idx+3:idx+47]
         nfces.append(chave)
+        nfces_lines[chave] = line.strip()
 f.close()
 
 f = open("chaves.txt", "r")
@@ -17,6 +20,7 @@ for line in f:
     if idx != -1:
         chave = line[idx+1:idx+45]
         sats.append(chave)
+        sats_lines[chave] = line.strip()
 f.close()
 
 db_file = "banco.db"
@@ -27,12 +31,12 @@ for chave in nfces:
     cursor.execute("select id from cupom where chave_acesso = ?", (chave,))
     row = cursor.fetchone()
     if not row:
-        print(f"NFCe {chave} não encontrada no banco de dados.")
+        print(nfces_lines[chave])
 
 for chave in sats:
     cursor.execute("select id from cupom where chave_acesso = ?", (chave,))
     row = cursor.fetchone()
     if not row:
-        print(f"SAT {chave} não encontrada no banco de dados.")
+        print(sats_lines[chave])
 
 conn.close()
