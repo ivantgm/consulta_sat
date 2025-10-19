@@ -64,18 +64,15 @@ def consulta_nfce(url):
 	fieldsets = html.find_all("fieldset")
 	for fieldset in fieldsets:
 		legend = fieldset.find("legend").get_text()
+		spans = fieldset.find_all("span")
 
 		match legend:
 			case "Dados da NF-e":
-				spans = fieldset.find_all("span")
-
 				result["numero_cfe"]        = spans[2].get_text()
 				result["numero_serie_sat"]  = spans[1].get_text()
 				result["data_hora_emissao"] = spans[3].get_text().replace(' ', " - ")[:-6]
 				result["valor_total"]       = spans[5].get_text()
 			case "Dados do Emitente":
-				spans = fieldset.find_all("span")
-
 				result["emitente"]["cnpj"]      = spans[2].get_text()
 				result["emitente"]["ie"]        = spans[10].get_text()
 				result["emitente"]["im"]        = spans[11].get_text()
@@ -86,13 +83,9 @@ def consulta_nfce(url):
 				result["emitente"]["cep"]       = spans[5].get_text()
 				result["emitente"]["municipio"] = municipio(spans[6].get_text())
 			case "Dados do Destinatário":
-				spans = fieldset.find_all("span")
-
 				result["consumidor"]["cpf_consumidor"]          = spans[1].get_text()
 				result["consumidor"]["razao_social_consumidor"] = spans[0].get_text()
 			case "Totais":
-				spans = fieldset.find_all("span")
-
 				result["total_tributos"] = spans[-1].get_text()
 				try:
 					float(result["total_tributos"][:].replace(',', '.'))
