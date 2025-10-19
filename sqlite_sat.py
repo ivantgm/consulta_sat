@@ -140,7 +140,7 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         emitente_ie,
         emitente_im,
         emitente_nome,
-        emitente_fantasia,
+        emitente_fantasia if emitente_fantasia != "" else emitente_nome,
         emitente_endereco,
         emitente_bairro,
         emitente_cep,
