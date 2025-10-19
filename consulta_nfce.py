@@ -14,6 +14,9 @@ PROCESSA_DETALHES = True
 def tirar_virgula(text: str) -> str:
 	return " ".join(text.split()).replace('\n', '').replace('\u00a0', '')
 
+def municipio(text: str) -> str:
+	return " ".join(text[text.rfind('\n'):].split())
+
 def consulta_nfce(url):
 	result = dict()
 	result["obs"] = ""
@@ -81,7 +84,7 @@ def consulta_nfce(url):
 				result["emitente"]["endereco"]  = tirar_virgula(spans[3].get_text())
 				result["emitente"]["bairro"]    = spans[4].get_text()
 				result["emitente"]["cep"]       = spans[5].get_text()
-				result["emitente"]["municipio"] = tirar_virgula(spans[3].get_text())
+				result["emitente"]["municipio"] = municipio(spans[6].get_text())
 			case "Dados do Destinatário":
 				spans = fieldset.find_all("span")
 
