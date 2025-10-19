@@ -47,12 +47,7 @@ def consulta_nfce(url):
 
 	html = bs4.BeautifulSoup(html_src, features="html.parser")
 
-	tables = html.find_all("table")
-
-	# Cabeçalho
-	table = tables[0]
-
-	tds = table.find_all("td")
+	tds = html.find("table").find_all("td")
 
 	chave_acesso = re.sub(r'[^0-9]', '', tds[3].get_text())
 	result["chave_acesso"] = chave_acesso
@@ -63,51 +58,43 @@ def consulta_nfce(url):
 		with open(f"./html/{chave_acesso}.html", "w", encoding="utf-8") as file:
 			file.write(html_src)
 
-	# Dados da NF-e
-	table = tables[1]
+	fieldsets = html.find_all("fieldset")
+	for fieldset in fieldsets:
+		legend = fieldset.find("legend").get_text()
 
-	spans = table.find_all("span")
+		match legend:
+			case "Dados da NF-e":
+				spans = fieldset.find_all("span")
 
-	result["numero_cfe"]        = spans[2].get_text()
-	result["numero_serie_sat"]  = spans[1].get_text()
-	result["data_hora_emissao"] = spans[3].get_text().replace(' ', " - ")[:-6]
-	result["valor_total"]       = spans[5].get_text()
+				result["numero_cfe"]        = spans[2].get_text()
+				result["numero_serie_sat"]  = spans[1].get_text()
+				result["data_hora_emissao"] = spans[3].get_text().replace(' ', " - ")[:-6]
+				result["valor_total"]       = spans[5].get_text()
+			case "Dados do Emitente":
+				spans = fieldset.find_all("span")
 
-	# Dados do Emitente
-	table = tables[5]
+				result["emitente"]["cnpj"]      = spans[2].get_text()
+				result["emitente"]["ie"]        = spans[10].get_text()
+				result["emitente"]["im"]        = spans[11].get_text()
+				result["emitente"]["nome"]      = spans[0].get_text()
+				result["emitente"]["fantasia"]  = spans[1].get_text()
+				result["emitente"]["endereco"]  = tirar_virgula(spans[3].get_text())
+				result["emitente"]["bairro"]    = spans[4].get_text()
+				result["emitente"]["cep"]       = spans[5].get_text()
+				result["emitente"]["municipio"] = tirar_virgula(spans[3].get_text())
+			case "Dados do Destinatário":
+				spans = fieldset.find_all("span")
 
-	spans = table.find_all("span")
+				result["consumidor"]["cpf_consumidor"]          = spans[1].get_text()
+				result["consumidor"]["razao_social_consumidor"] = spans[0].get_text()
+			case "Totais":
+				spans = fieldset.find_all("span")
 
-	result["emitente"]["cnpj"]      = spans[2].get_text()
-	result["emitente"]["ie"]        = spans[10].get_text()
-	result["emitente"]["im"]        = spans[11].get_text()
-	result["emitente"]["nome"]      = spans[0].get_text()
-	result["emitente"]["fantasia"]  = spans[1].get_text()
-	result["emitente"]["endereco"]  = tirar_virgula(spans[3].get_text())
-	result["emitente"]["bairro"]    = spans[4].get_text()
-	result["emitente"]["cep"]       = spans[5].get_text()
-	result["emitente"]["municipio"] = tirar_virgula(spans[3].get_text())
-
-	spans = table.find_all("span")
-
-	# Dados do Destinatário
-	table = tables[6]
-
-	spans = table.find_all("span")
-
-	result["consumidor"]["cpf_consumidor"]          = spans[1].get_text()
-	result["consumidor"]["razao_social_consumidor"] = spans[0].get_text()
-
-	# Totais
-	table = html.find("div", id="Conteudo_pnlNFe_tabTotais").find("table")
-
-	spans = table.find_all("span")
-
-	result["total_tributos"] = spans[-1].get_text()
-	try:
-		float(result["total_tributos"][:].replace(',', '.'))
-	except ValueError:
-		result["total_tributos"] = "00,00"
+				result["total_tributos"] = spans[-1].get_text()
+				try:
+					float(result["total_tributos"][:].replace(',', '.'))
+				except ValueError:
+					result["total_tributos"] = "00,00"
 
 	toggle_boxes = html.find_all("table", class_="toggle box")
 	toggable_boxes = html.find_all("table", class_="toggable box")
