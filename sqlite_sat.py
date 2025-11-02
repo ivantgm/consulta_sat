@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS cupom (
     obs_inf TEXT,
     cnpj_emitente TEXT,
     cpf_consumidor TEXT,
-    razao_social_consumidor TEXT
+    razao_social_consumidor TEXT,
+    enviado INTEGER DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_cupom_data_hora_emissao ON cupom (data_hora_emissao);
 CREATE INDEX IF NOT EXISTS idx_cupom_cnpj_emitente ON cupom (cnpj_emitente);
