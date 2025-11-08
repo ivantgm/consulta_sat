@@ -7,8 +7,8 @@ if ($termo !== "") {
     $sql = "
         SELECT 
             i.descricao AS produto, 
-            i.valor_unit-i.desconto AS valor, 
-            i.desconto AS desconto,
+            i.valor_unit-(i.desconto/i.qtde) AS valor, 
+            i.desconto/i.qtde AS desconto,
             CONCAT(
             SUBSTRING(c.data_hora_emissao, 7, 2), '/', 
             SUBSTRING(c.data_hora_emissao, 5, 2), '/', 

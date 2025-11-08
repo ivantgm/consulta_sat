@@ -32,6 +32,9 @@ for chave in nfces:
     row = cursor.fetchone()
     if not row:
         print(nfces_lines[chave])
+    else:
+        id_cupom = row[0]
+        cursor.execute("update cupom set url_consulta = ? where id = ?", (nfces_lines[chave], id_cupom))
 
 for chave in sats:
     cursor.execute("select id from cupom where chave_acesso = ?", (chave,))
@@ -39,4 +42,5 @@ for chave in sats:
     if not row:
         print(sats_lines[chave])
 
+conn.commit()
 conn.close()

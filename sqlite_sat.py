@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS cupom (
     cnpj_emitente TEXT,
     cpf_consumidor TEXT,
     razao_social_consumidor TEXT,
-    enviado INTEGER DEFAULT 0
+    enviado INTEGER DEFAULT 0,
+    url_consulta TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_cupom_data_hora_emissao ON cupom (data_hora_emissao);
 CREATE INDEX IF NOT EXISTS idx_cupom_cnpj_emitente ON cupom (cnpj_emitente);
@@ -76,7 +77,8 @@ INSERT INTO cupom (
     data_hora_emissao,
     numero_cfe,      
     numero_serie_sat,       
-    chave_acesso,           
+    chave_acesso, 
+    url_consulta, 
     valor_total,            
     obs_cupom,              
     obs_inf,                
@@ -85,7 +87,7 @@ INSERT INTO cupom (
     cpf_consumidor,         
     razao_social_consumidor            
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
 INSERT_CUPOM_ITEM = '''
@@ -116,6 +118,7 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
     numero_cfe              = cupom["numero_cfe"]
     numero_serie_sat        = cupom["numero_serie_sat"]
     chave_acesso            = cupom["chave_acesso"]
+    url_consulta            = cupom.get("url_consulta", "")
     valor_total             = cupom["valor_total"]
     obs_cupom               = cupom["obs"]
     obs_inf                 = user_obs_inf
@@ -154,6 +157,7 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         numero_cfe,
         numero_serie_sat,
         chave_acesso,
+        url_consulta,
         valor_total,
         obs_cupom,
         obs_inf,

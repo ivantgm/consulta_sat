@@ -8,6 +8,7 @@ urls.txt
 urls-nao-entrou.txt
 banco.db
 banco.db-journal
+secret_key.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -54,6 +54,7 @@ def consulta_nfce(url):
 
 	chave_acesso = re.sub(r'[^0-9]', '', tds[3].get_text())
 	result["chave_acesso"] = chave_acesso
+	result["url_consulta"] = url
 
 	if SAVE_HTML:
 		if not os.path.exists("./html"):
