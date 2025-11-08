@@ -17,7 +17,7 @@ $id_usuario = null;
 $headers = array_change_key_case(apache_request_headers());
 
 if (!isset($headers['secret-key'])) {
-    http_response_code(402);
+    http_response_code(401);
     echo json_encode(["erro" => "secret-key not found"]);
     exit;
 } else {
@@ -25,7 +25,7 @@ if (!isset($headers['secret-key'])) {
     $secret_key = base64_decode($secret_key);
     $lines = explode("\n", $secret_key);
     if (count($lines) !== 2) {
-        http_response_code(403);
+        http_response_code(401);
         echo json_encode(["erro" => "invalid secret-key format"]);
         exit;
     }
@@ -40,7 +40,7 @@ if (!isset($headers['secret-key'])) {
     $auth_stmt->close();
 
     if (!$id_usuario) {
-        http_response_code(404);
+        http_response_code(401);
         echo json_encode(["erro" => "invalid credentials"]);
         exit;
     }
