@@ -1,5 +1,6 @@
 import json
 import sqlite3
+import os
 import urllib.request
 
 # ====== CONFIGURAÇÕES ======
@@ -11,6 +12,13 @@ URL_POST = "https://miliogo.com/cupom/import_json.php"
 def enviar_json(data):
     """Envia um JSON via POST para o servidor PHP"""
     try:
+        secret_file_name = "secret_key.txt"
+        if not os.path.isfile(secret_file_name):
+            raise FileNotFoundError(f"Arquivo de segredo não encontrado: {secret_file_name}")
+        secret_file = open(secret_file_name, "r")
+        secret_key = secret_file.read().strip()
+        secret_file.close()
+        
         json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
         req = urllib.request.Request(
             URL_POST,
@@ -18,7 +26,7 @@ def enviar_json(data):
             headers = {
                 "Content-Type": "application/json",
                 "User-Agent": "miliogo-cupom-client/1.0",
-                "secret-key": "SUA_CHAVE_SECRETA"
+                "secret-key": secret_key
             },
             method="POST"
         )
@@ -26,7 +34,7 @@ def enviar_json(data):
             resposta = resp.read().decode("utf-8")
             print("Resposta:", resposta)
     except Exception as e:
-        print("Erro ao enviar:", e)
+        raise e        
 
 def carregar_cupons(conn):
     """Carrega todos os cupons com emitente e itens"""
@@ -74,6 +82,7 @@ def carregar_cupons(conn):
             },
             "itens": itens_list,
             "chave_acesso": cupom.get("chave_acesso"),
+            "url_consulta": cupom.get("url_consulta"),
             "numero_cfe": cupom.get("numero_cfe"),
             "numero_serie_sat": cupom.get("numero_serie_sat"),
             "data_hora_emissao": cupom.get("data_hora_emissao"),

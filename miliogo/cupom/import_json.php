@@ -13,6 +13,39 @@ if (!$data) {
     exit;
 }
 
+$id_usuario = null;
+$headers = array_change_key_case(apache_request_headers());
+
+if (!isset($headers['secret-key'])) {
+    http_response_code(402);
+    echo json_encode(["erro" => "secret-key not found"]);
+    exit;
+} else {
+    $secret_key = $headers['secret-key'];
+    $secret_key = base64_decode($secret_key);
+    $lines = explode("\n", $secret_key);
+    if (count($lines) !== 2) {
+        http_response_code(403);
+        echo json_encode(["erro" => "invalid secret-key format"]);
+        exit;
+    }
+    $username = trim($lines[0]);
+    $password = trim($lines[1]);
+
+    $auth_stmt = $conn->prepare("SELECT id FROM usuario WHERE nome = ? AND senha = ?");
+    $auth_stmt->bind_param("ss", $username, $password);
+    $auth_stmt->execute();
+    $auth_stmt->bind_result($id_usuario);
+    $auth_stmt->fetch();
+    $auth_stmt->close();
+
+    if (!$id_usuario) {
+        http_response_code(404);
+        echo json_encode(["erro" => "invalid credentials"]);
+        exit;
+    }
+}
+
 $check_stmt = $conn->prepare("SELECT COUNT(*) FROM emitente WHERE cnpj = ?");
 $check_stmt->bind_param("s", $data["emitente"]["cnpj"]);
 $check_stmt->execute();
@@ -60,16 +93,18 @@ if ($count == 0) {
                 data_hora_emissao, 
                 valor_total, 
                 total_tributos, 
-                obs_cupom
+                obs_cupom,
+                id_usuario,
+                url_consulta
             )
         VALUES 
             (
-                ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
     ");
 
     $stmt->bind_param(
-        "sssssdds",
+        "sssssddsis",
         $data["chave_acesso"],
         $data["emitente"]["cnpj"],
         $data["numero_cfe"],
@@ -77,7 +112,9 @@ if ($count == 0) {
         $data["data_hora_emissao"],
         $data["valor_total"],
         $data["total_tributos"],
-        $data["obs"]
+        $data["obs"],
+        $id_usuario,
+        $data["url_consulta"]
     );
 
     if (!$stmt->execute()) {
