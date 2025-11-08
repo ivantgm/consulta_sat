@@ -19,7 +19,7 @@ if ($termo !== "") {
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
         WHERE i.descricao LIKE ?        
-        GROUP BY i.descricao, i.valor_unit, i.desconto, i.qtde, c.data_hora_emissao, e.nome
+        GROUP BY i.descricao, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
         ORDER BY c.data_hora_emissao DESC
         LIMIT 25
     ";
