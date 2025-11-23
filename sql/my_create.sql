@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS emitente;
 DROP TABLE IF EXISTS cupom;
 DROP TABLE IF EXISTS cupom_item;
+DROP TABLE IF EXISTS usuario;
 
 CREATE TABLE IF NOT EXISTS emitente (
     cnpj varchar(25),
@@ -17,10 +18,12 @@ CREATE TABLE IF NOT EXISTS emitente (
 
 CREATE TABLE IF NOT EXISTS cupom (
     id int(10) not null AUTO_INCREMENT,
+    id_usuario int(10),
     data_hora_emissao varchar(25),
     numero_cfe varchar(25),
     numero_serie_sat varchar(25),
     chave_acesso varchar(44),
+    url_consulta TEXT,
     valor_total DOUBLE,
     total_tributos DOUBLE,
     obs_cupom TEXT,
@@ -51,3 +54,13 @@ CREATE TABLE IF NOT EXISTS cupom_item (
     KEY `idx_cupom_item_codigo` (`codigo`),
     KEY `idx_cupom_item_descricao` (`descricao`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id int(10) not null AUTO_INCREMENT,
+    nome varchar(255),
+    senha varchar(255),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_nome` (`nome`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+insert into usuario (nome, senha) values ('nome_usuario', md5('senha_usuario'));
