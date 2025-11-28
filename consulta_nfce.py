@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import requests
 import sys
 import os
 import time
@@ -10,6 +11,69 @@ import re
 SAVE_HTML = True
 SAVE_JSON_RESULT = True
 PROCESSA_DETALHES = True
+USE_SELENIUM = False
+
+def get_2nd_page_selenium(url: str) -> str:
+    if sys.platform == "linux":
+        geckodriver_path = '/snap/bin/geckodriver' #To get the geckodriver path run `$ which geckodriver` in shell
+        driver_service = webdriver.FirefoxService(executable_path=geckodriver_path)
+        driver = webdriver.Firefox(service=driver_service)
+    else:
+        driver = webdriver.Firefox()
+
+    driver.set_window_size(700, 700)
+    driver.get(url)
+
+    time.sleep(1)
+
+    btnVisualizarAbas = driver.find_element(By.NAME, "btnVisualizarAbas")
+    btnVisualizarAbas.click()
+
+    time.sleep(1)
+
+    src = driver.page_source
+
+    driver.quit()
+
+    return src
+
+def get_2nd_page_requests(url: str) -> str:
+    UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+
+    headers1 = {
+        'User-Agent': UserAgent
+    }
+
+    response1 = requests.get(url, headers=headers1)
+
+    parse_html = bs4.BeautifulSoup(response1.text, features="html.parser")
+
+    inputs = parse_html.find_all('input')
+    data = {}
+    for input_element in inputs:
+        name = input_element.get('name')
+        value = input_element.get('value', '')
+        if name:
+            if name == '__EVENTTARGET':
+                value = 'btnVisualizarAbas'
+            if name in ['__EVENTTARGET', '__EVENTARGUMENT', '__VIEWSTATE', '__VIEWSTATEGENERATOR', '__EVENTVALIDATION']:            
+                data[name] = value        
+
+
+    url2 = 'https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaResponsiva/ConsultaResumidaRJFrame_v400.aspx'
+
+    headers2 = {
+        'Referer': url,
+        'User-Agent': UserAgent
+    }
+
+    return requests.post(url2, cookies=response1.cookies, headers=headers2, data=data).text
+
+def get_2nd_page(url: str) -> str:
+    if USE_SELENIUM:
+        return get_2nd_page_selenium(url)
+    
+    return get_2nd_page_requests(url)
 
 def tirar_virgula(text: str) -> str:
 	return " ".join(text.split()).replace('\n', '').replace('\u00a0', '')
@@ -28,26 +92,7 @@ def consulta_nfce(url):
 	# precisamos pegar o endereço de redirecionamento do botão "Visualizar em abas"
 	# nesse site, terá os dados completos
 
-	if sys.platform == "linux":
-		geckodriver_path = '/snap/bin/geckodriver' #To get the geckodriver path run `$ which geckodriver` in shell
-		driver_service = webdriver.FirefoxService(executable_path=geckodriver_path)
-		driver = webdriver.Firefox(service=driver_service)
-	else:
-		driver = webdriver.Firefox()
-
-	driver.set_window_size(700, 700)
-	driver.get(url)
-
-	time.sleep(1)
-
-	btnVisualizarAbas = driver.find_element(By.NAME, "btnVisualizarAbas")
-	btnVisualizarAbas.click()
-
-	time.sleep(1)
-
-	html_src = driver.page_source
-	driver.quit()
-
+	html_src = get_2nd_page(url)
 	html = bs4.BeautifulSoup(html_src, features="html.parser")
 
 	tds = html.find("table").find_all("td")
