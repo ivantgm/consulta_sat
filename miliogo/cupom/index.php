@@ -7,6 +7,7 @@ if ($termo !== "") {
     $sql = "
         SELECT 
             i.descricao AS produto, 
+            i.un AS un,
             i.valor_unit-(i.desconto/i.qtde) AS valor, 
             i.desconto/i.qtde AS desconto,
             CONCAT(
@@ -68,6 +69,7 @@ $conn->close();
                     <table border="1" cellpadding="5" cellspacing="0">
                         <tr>
                             <th>Produto</th>
+                            <th>Un</th>
                             <th>Valor Pago</th>
                             <th>Desconto</th>
                             <th>Data</th>
@@ -80,6 +82,7 @@ $conn->close();
                                         <?= htmlspecialchars($r['produto']) ?>
                                     </a>
                                 </td>
+                                <td><?= htmlspecialchars($r['un']) ?></td>
                                 <td class="valor"><?= number_format($r['valor'], 2, ',', '.') ?></td>
                                 <td class="valor"><?= number_format($r['desconto'], 2, ',', '.') ?></td>
                                 <td><?= htmlspecialchars($r['data']) ?></td>
