@@ -94,3 +94,12 @@ order by c.data_hora_emissao desc
 -----------------------------------------------------------
 select substr(chave_acesso, 21, 2) modelo_59_65
 from cupom
+
+-----------------------------------------------------------
+- conferir o valor total da cabeça com os itens -----------
+-----------------------------------------------------------
+SELECT c.id, c.valor_total, url_consulta, sum(ci.valor_unit*ci.qtde-ci.desconto)
+FROM cupom c
+left outer join cupom_item ci on ci.id_cupom = c.id
+where c.id >= 381
+group by c.id;

@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS cupom (
     cpf_consumidor TEXT,
     razao_social_consumidor TEXT,
     enviado INTEGER DEFAULT 0,
-    url_consulta TEXT
+    url_consulta TEXT,
+    id_miliogo INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_cupom_data_hora_emissao ON cupom (data_hora_emissao);
 CREATE INDEX IF NOT EXISTS idx_cupom_cnpj_emitente ON cupom (cnpj_emitente);
@@ -85,9 +86,10 @@ INSERT INTO cupom (
     total_tributos,         
     cnpj_emitente,          
     cpf_consumidor,         
-    razao_social_consumidor            
+    razao_social_consumidor,
+    id_miliogo
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
 INSERT_CUPOM_ITEM = '''
@@ -106,7 +108,7 @@ INSERT INTO cupom_item (
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 '''
 
-def save_json_to_sqlite(cupom, user_obs_inf=""):
+def save_json_to_sqlite(cupom, user_obs_inf="", preparar = True):
     db_file = "banco.db"
     conn = sqlite3.connect(db_file)
     cursor = conn.cursor()
@@ -114,14 +116,19 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
     cursor.executescript(CREATE_TABLE_CUPOM)
     cursor.executescript(CREATE_TABLE_CUPOM_ITEM)
 
+    id_miliogo              = cupom.get("id", 0)
     data_hora_emissao       = cupom["data_hora_emissao"]
     numero_cfe              = cupom["numero_cfe"]
     numero_serie_sat        = cupom["numero_serie_sat"]
     chave_acesso            = cupom["chave_acesso"]
     url_consulta            = cupom.get("url_consulta", "")
     valor_total             = cupom["valor_total"]
-    obs_cupom               = cupom["obs"]
-    obs_inf                 = user_obs_inf
+    if "obs" in cupom:
+        obs_cupom               = cupom["obs"]
+        obs_inf                 = user_obs_inf
+    else:
+        obs_cupom               = cupom["obs_cupom"]
+        obs_inf                 = str(cupom["obs_inf"]) + " " + user_obs_inf
     total_tributos          = cupom["total_tributos"]
     emitente_cnpj           = cupom["emitente"]["cnpj"]
     emitente_ie             = cupom["emitente"]["ie"]
@@ -135,9 +142,9 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
     cpf_consumidor          = cupom["consumidor"]["cpf_consumidor"]
     razao_social_consumidor = cupom["consumidor"]["razao_social_consumidor"]
 
-    data_hora_emissao = prepare_datetime(data_hora_emissao)
-    valor_total = prepare_float(valor_total)
-    total_tributos = prepare_float(total_tributos)
+    data_hora_emissao = prepare_datetime(data_hora_emissao, preparar=preparar)
+    valor_total = prepare_float(valor_total, preparar=preparar)
+    total_tributos = prepare_float(total_tributos, preparar=preparar)
 
     emitente_data = (
         emitente_cnpj,
@@ -164,7 +171,8 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         total_tributos,
         emitente_cnpj,
         cpf_consumidor,
-        razao_social_consumidor
+        razao_social_consumidor,
+        id_miliogo
     )
     cursor.execute(INSERT_CUPOM, cupom_data)
     last_insert_id = cursor.lastrowid    
@@ -180,11 +188,11 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
         valor_total_item = item["valor_total"]
         desconto = item["desconto"] if item["desconto"] is not None else "0"
 
-        qtde = prepare_float(qtde)
-        valor_unit = prepare_float(valor_unit)
-        tributos = prepare_float(tributos)
-        valor_total_item = prepare_float(valor_total_item)
-        desconto = prepare_float(desconto)
+        qtde = prepare_float(qtde, preparar=preparar)
+        valor_unit = prepare_float(valor_unit, preparar=preparar)
+        tributos = prepare_float(tributos, preparar=preparar)
+        valor_total_item = prepare_float(valor_total_item, preparar=preparar)
+        desconto = prepare_float(desconto, preparar=preparar)
 
         cupom_item_data = (
             last_insert_id,
@@ -203,10 +211,14 @@ def save_json_to_sqlite(cupom, user_obs_inf=""):
     conn.commit()
     conn.close()
 
-def prepare_datetime(date_str):
+def prepare_datetime(date_str, preparar=True):
+    if not preparar:
+        return date_str
     return datetime.strptime(date_str, "%d/%m/%Y - %H:%M:%S").strftime("%Y%m%d%H%M%S")
 
-def prepare_float(value):
+def prepare_float(value, preparar=True):
+    if not preparar:
+        return value
     return float(
         value
             .replace(".", "")
