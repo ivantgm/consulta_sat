@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS cupom (
     cnpj_emitente varchar(25),
     cpf_consumidor varchar(25),
     razao_social_consumidor varchar(255),
+    ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_chave_acesso` (`chave_acesso`),
     KEY `idx_cupom_data_hora_emissao` (`data_hora_emissao`),
@@ -59,6 +60,8 @@ CREATE TABLE IF NOT EXISTS usuario (
     id int(10) not null AUTO_INCREMENT,
     nome varchar(255),
     senha varchar(255),
+    ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ip varchar(45),
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_nome` (`nome`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

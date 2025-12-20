@@ -1,0 +1,100 @@
+<?php
+
+header("Content-Type: application/json; charset=UTF-8");
+
+ini_set('precision', 14);
+ini_set('serialize_precision', -1);
+
+require "my.php";
+
+$json = file_get_contents("php://input");
+$data = json_decode($json, true);
+
+if (!$data) {
+    http_response_code(400);
+    echo json_encode(["erro" => "JSON invalido"]);
+    exit;
+}
+
+$nome = $data["nome"] ?? "";
+$senha = $data["senha"] ?? "";
+$funcao = $data["funcao"] ?? "";
+
+if ($nome == "" || $senha == "" || $funcao == "") {
+    http_response_code(400);
+    echo json_encode(["erro" => "Nome, senha e funcao sao obrigatorios"]);
+    exit;
+}
+
+$senha = md5($senha);
+
+if ($funcao == "login") {
+    $sql = "SELECT id, nome, senha FROM usuario WHERE nome = ? AND senha = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $nome, $senha);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        echo json_encode([
+            "id" => $row["id"],
+            "secret" => base64_encode($row["nome"] . "\n" . $row["senha"])
+        ]);
+    } else {
+        http_response_code(401);
+        echo json_encode(["erro" => "Nome ou senha invalidos"]);
+    }
+    $stmt->close();
+} else if ($funcao == "mudar_senha") {
+    $nova_senha = $data["nova_senha"] ?? "";
+    if ($nova_senha == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nova senha e obrigatoria"]);
+        exit;
+    }
+    $nova_senha_hashed = md5($nova_senha);
+    $sql = "UPDATE usuario SET senha = ? WHERE nome = ? AND senha = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sss", $nova_senha_hashed, $nome, $senha);
+    $stmt->execute();
+    if ($stmt->affected_rows > 0) {
+        echo json_encode(["sucesso" => "Senha alterada com sucesso"]);
+    } else {
+        http_response_code(401);
+        echo json_encode(["erro" => "Nome ou senha invalidos"]);
+    }
+    $stmt->close();
+} else if ($funcao == "criar") {
+
+    $sql = "SELECT id FROM usuario WHERE nome = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $nome);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nome de usuario ja existe"]);
+        $stmt->close();
+        $conn->close();
+        exit;
+    }
+    $stmt->close();
+
+    $sql = "INSERT INTO usuario (nome, senha, ip) VALUES (?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sss", $nome, $senha, $_SERVER['REMOTE_ADDR']);
+    if ($stmt->execute()) {
+        echo json_encode(["sucesso" => "Usuario criado com sucesso"]);
+    } else {
+        http_response_code(400);
+        echo json_encode(["erro" => "Erro ao criar usuario"]);
+    }
+    $stmt->close();
+} else {
+    http_response_code(400);
+    echo json_encode(["erro" => "funcao invalida"]);
+}
+
+
+$conn->close();
+?>
+

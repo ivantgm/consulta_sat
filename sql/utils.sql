@@ -103,3 +103,12 @@ FROM cupom c
 left outer join cupom_item ci on ci.id_cupom = c.id
 where c.id >= 381
 group by c.id;
+
+-----------------------------------------------------------
+-- criar o timestamp no cupom
+-----------------------------------------------------------
+alter table cupom add column ts_i timestamp default current_timestamp;
+update cupom set ts_i = data_hora_emissao;
+
+alter table usuario add column ts_i timestamp default current_timestamp;
+alter table usuario add column ip varchar(45);
