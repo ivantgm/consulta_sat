@@ -36,6 +36,7 @@ if ($funcao == "login") {
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
         echo json_encode([
+            "sucesso" => "Login realizado com sucesso",
             "id" => $row["id"],
             "secret" => base64_encode($row["nome"] . "\n" . $row["senha"])
         ]);
@@ -57,7 +58,10 @@ if ($funcao == "login") {
     $stmt->bind_param("sss", $nova_senha_hashed, $nome, $senha);
     $stmt->execute();
     if ($stmt->affected_rows > 0) {
-        echo json_encode(["sucesso" => "Senha alterada com sucesso"]);
+        echo json_encode([
+            "sucesso" => "Senha alterada com sucesso",
+            "secret" => base64_encode($nome . "\n" . $nova_senha_hashed)
+        ]);
     } else {
         http_response_code(401);
         echo json_encode(["erro" => "Nome ou senha invalidos"]);
@@ -83,7 +87,10 @@ if ($funcao == "login") {
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("sss", $nome, $senha, $_SERVER['REMOTE_ADDR']);
     if ($stmt->execute()) {
-        echo json_encode(["sucesso" => "Usuario criado com sucesso"]);
+        echo json_encode([
+            "sucesso" => "Usuario criado com sucesso",
+            "secret" => base64_encode($nome . "\n" . $senha)
+        ]);
     } else {
         http_response_code(400);
         echo json_encode(["erro" => "Erro ao criar usuario"]);
