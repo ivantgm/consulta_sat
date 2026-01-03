@@ -1,20 +1,8 @@
 <?php
 
-header("Content-Type: application/json; charset=UTF-8");
-
-ini_set('precision', 14);
-ini_set('serialize_precision', -1);
-
+require "api.headers.php";
 require "my.php";
-
-$json = file_get_contents("php://input");
-$data = json_decode($json, true);
-
-if (!$data) {
-    http_response_code(400);
-    echo json_encode(["erro" => "JSON inválido"]);
-    exit;
-}
+require "api.data.php";
 
 $nome = $data["nome"] ?? "";
 $codigo = $data["codigo"] ?? "";

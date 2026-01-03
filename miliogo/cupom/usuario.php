@@ -1,20 +1,8 @@
 <?php
 
-header("Content-Type: application/json; charset=UTF-8");
-
-ini_set('precision', 14);
-ini_set('serialize_precision', -1);
-
+require "api.headers.php";
 require "my.php";
-
-$json = file_get_contents("php://input");
-$data = json_decode($json, true);
-
-if (!$data) {
-    http_response_code(400);
-    echo json_encode(["erro" => "JSON invalido"]);
-    exit;
-}
+require "api.data.php";
 
 $nome = $data["nome"] ?? "";
 $senha = $data["senha"] ?? "";
@@ -26,7 +14,7 @@ if ($nome == "" || $senha == "" || $funcao == "") {
     exit;
 }
 
-$senha = md5($senha);
+$senha = md5(HASH_SECRET . $senha);
 
 if ($funcao == "login") {
     $sql = "SELECT id, nome, senha FROM usuario WHERE nome = ? AND senha = ?";
@@ -52,7 +40,7 @@ if ($funcao == "login") {
         echo json_encode(["erro" => "Nova senha e obrigatoria"]);
         exit;
     }
-    $nova_senha_hashed = md5($nova_senha);
+    $nova_senha_hashed = md5(HASH_SECRET . $nova_senha);
     $sql = "UPDATE usuario SET senha = ? WHERE nome = ? AND senha = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("sss", $nova_senha_hashed, $nome, $senha);
