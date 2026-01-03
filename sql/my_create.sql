@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS cupom (
     razao_social_consumidor varchar(255),
     ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `idx_chave_acesso` (`chave_acesso`),
+    UNIQUE KEY `idx_chave_acesso` (`chave_acesso`, `id_usuario`),
     KEY `idx_cupom_data_hora_emissao` (`data_hora_emissao`),
     KEY `idx_cupom_cnpj_emitente` (`cnpj_emitente`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

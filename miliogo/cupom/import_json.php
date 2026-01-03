@@ -32,8 +32,8 @@ if ($count == 0) {
     $stmt->close();
 }
 
-$check_stmt = $conn->prepare("SELECT COUNT(*) FROM cupom WHERE chave_acesso = ?");
-$check_stmt->bind_param("s", $data["chave_acesso"]);
+$check_stmt = $conn->prepare("SELECT COUNT(*) FROM cupom WHERE chave_acesso = ? AND id_usuario = ?");
+$check_stmt->bind_param("si", $data["chave_acesso"], $id_usuario);
 $check_stmt->execute();
 $check_stmt->bind_result($count);
 $check_stmt->fetch();
@@ -119,13 +119,28 @@ if ($count == 0) {
 
     $stmt->close();
     $conn->close();
+    echo json_encode(
+        [
+            "status" => "OK",
+            "mensagem" => "Cupom importado com sucesso!",
+            "id_cupom" => $id_cupom
+        ]
+    );
+} else {
+    $stmt = $conn->prepare("SELECT id FROM cupom WHERE chave_acesso = ? AND id_usuario = ?");
+    $stmt->bind_param("si", $data["chave_acesso"], $id_usuario);
+    $stmt->execute();
+    $stmt->bind_result($id_cupom);
+    $stmt->fetch();
+    $stmt->close();
+    echo json_encode(
+        [
+            "status" => "OK",
+            "mensagem" => "Cupom ja existe.",
+            "id_cupom" => $id_cupom
+        ]
+    );
 }
 
-echo json_encode(
-    [
-        "status" => "OK",
-        "mensagem" => "Cupom importado com sucesso!",
-        "id_cupom" => $id_cupom
-    ]
-);
+
 ?>

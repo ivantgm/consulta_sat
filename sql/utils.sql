@@ -112,3 +112,7 @@ update cupom set ts_i = data_hora_emissao;
 
 alter table usuario add column ts_i timestamp default current_timestamp;
 alter table usuario add column ip varchar(45);
+
+-- adicionar índice único composto para possibitar duplicidade de cupom por usuário
+drop index idx_chave_acesso on cupom;
+alter table cupom add unique key idx_chave_acesso (chave_acesso, id_usuario);
