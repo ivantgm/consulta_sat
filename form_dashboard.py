@@ -229,14 +229,14 @@ class Dashboard(QMainWindow):
         SELECT_CUPOM = """
             select                
                 substr(c.data_hora_emissao, 5, 2) || '/' ||
-                substr(c.data_hora_emissao, 1, 4) as data,   
+                substr(c.data_hora_emissao, 1, 4) as data,
                 round(sum(c.valor_total), 2) as valor_total,
                 count(c.id) as qtde_cupons,
                 group_concat(c.id) as cupom_ids
             from cupom c
             where c.data_hora_emissao between ? and ?
             group by substr(c.data_hora_emissao, 1, 6)
-            order by data
+            order by substr(c.data_hora_emissao, 1, 6)
         """
         self.cursor.execute(SELECT_CUPOM, (data_inicio, data_fim))
         rows = self.cursor.fetchall()
