@@ -1,8 +1,6 @@
 <?php
 
-require "api.headers.php";
-require "my.php";
-require "api.data.php";
+require "api.nu.php";
 
 $nome = $data["nome"] ?? "";
 $senha = $data["senha"] ?? "";
@@ -84,6 +82,7 @@ if ($funcao == "login") {
         echo json_encode(["erro" => "Erro ao criar usuario"]);
     }
     $stmt->close();
+
 } else {
     http_response_code(400);
     echo json_encode(["erro" => "funcao invalida"]);

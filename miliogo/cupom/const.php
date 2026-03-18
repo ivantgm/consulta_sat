@@ -5,4 +5,3 @@ define('MY_USER', "seu-usuario-aqui");
 define('MY_PASS', "sua-senha-aqui");
 define('MY_DB', "seu-banco-de-dados-aqui");
 ?>
-

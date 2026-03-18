@@ -1,8 +1,6 @@
 <?php
 
-require "api.headers.php";
-require "my.php";
-require "api.data.php";
+require "api.nu.php";
 
 $nome = $data["nome"] ?? "";
 $codigo = $data["codigo"] ?? "";
