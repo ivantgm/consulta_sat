@@ -300,7 +300,8 @@ class DashboardItens(QMainWindow):
                 c.cnpj_emitente,
                 e.fantasia,
                 e.endereco,
-                c.chave_acesso
+                c.chave_acesso,
+                c.url_consulta
             from cupom c
             join emitente e on c.cnpj_emitente = e.cnpj
             where c.id = ?
@@ -335,6 +336,12 @@ class DashboardItens(QMainWindow):
         client_layout.addLayout(row_layout)        
         self.add_field(row_layout, "Endereço", row[4], stretch=3)
         self.add_field(row_layout, "Chave de Acesso", row[5], stretch=4)
+
+        row_layout = QHBoxLayout()
+        client_layout.addLayout(row_layout)        
+        self.add_field(row_layout, "URL Consulta", row[6])
+        self.url_consulta = row[6]
+        
 
         row_layout = QHBoxLayout()
         client_layout.addLayout(row_layout)
@@ -416,7 +423,7 @@ class DashboardItens(QMainWindow):
                     table.align[header] = "r"
                 else:
                     table.align[header] = "l"
-            pyperclip.copy(table.get_string())
+            pyperclip.copy(self.url_consulta + "\n" + table.get_string())
 
         btn_copy.clicked.connect(copy_table)
         main_layout.addWidget(btn_copy)
