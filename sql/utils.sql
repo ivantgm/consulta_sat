@@ -116,3 +116,8 @@ alter table usuario add column ip varchar(45);
 -- adicionar índice único composto para possibitar duplicidade de cupom por usuário
 drop index idx_chave_acesso on cupom;
 alter table cupom add unique key idx_chave_acesso (chave_acesso, id_usuario);
+
+-- ADICIONAR NOVOS CAMPOS NO USUARIO
+ALTER TABLE usuario 
+ADD COLUMN email varchar(255) AFTER ip,
+ADD COLUMN telefone varchar(255) AFTER email;

@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS usuario (
     senha varchar(255),
     ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip varchar(45),
+    email varchar(255),
+    telefone varchar(255),
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_nome` (`nome`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
