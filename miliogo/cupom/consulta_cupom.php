@@ -3,27 +3,52 @@
 require "api.php";
 
 $ultimo_id = $data["ultimo_id"] ?? "";
+$in_ids = $data["in_ids"] ?? "";
 
-if ($ultimo_id !== "") {
-    $sql = "
-        SELECT 
-          c.*,
-          e.cnpj AS cnpj_emitente,
-          e.ie AS ie_emitente,
-          e.im AS im_emitente,
-          e.nome AS nome_emitente,
-          e.fantasia AS fantasia_emitente,
-          e.endereco AS endereco_emitente,
-          e.bairro AS bairro_emitente,
-          e.cep AS cep_emitente,
-          e.municipio AS municipio_emitente
-        FROM cupom c
-        LEFT OUTER JOIN emitente e ON c.cnpj_emitente = e.cnpj
-        WHERE (c.id > ?) AND (c.id_usuario = ?)
-        ORDER BY c.id ASC
-    ";
-    $stmt = $conn->prepare($sql);    
-    $stmt->bind_param("ii", $ultimo_id, $id_usuario);
+if (($ultimo_id !== "") || (is_integer_array($in_ids)&& (count($in_ids) > 0))) {
+    $sql = "";
+    if ($ultimo_id !== "") {
+        $sql = "
+            SELECT 
+            c.*,
+            e.cnpj AS cnpj_emitente,
+            e.ie AS ie_emitente,
+            e.im AS im_emitente,
+            e.nome AS nome_emitente,
+            e.fantasia AS fantasia_emitente,
+            e.endereco AS endereco_emitente,
+            e.bairro AS bairro_emitente,
+            e.cep AS cep_emitente,
+            e.municipio AS municipio_emitente
+            FROM cupom c
+            LEFT OUTER JOIN emitente e ON c.cnpj_emitente = e.cnpj
+            WHERE (c.id > ?) AND (c.id_usuario = ?)
+            ORDER BY c.id ASC
+        ";
+        $stmt = $conn->prepare($sql);    
+        $stmt->bind_param("ii", $ultimo_id, $id_usuario);
+    } else { // is_integer_array($in_ids)
+        $sql = "
+            SELECT 
+            c.*,
+            e.cnpj AS cnpj_emitente,
+            e.ie AS ie_emitente,
+            e.im AS im_emitente,
+            e.nome AS nome_emitente,
+            e.fantasia AS fantasia_emitente,
+            e.endereco AS endereco_emitente,
+            e.bairro AS bairro_emitente,
+            e.cep AS cep_emitente,
+            e.municipio AS municipio_emitente
+            FROM cupom c
+            LEFT OUTER JOIN emitente e ON c.cnpj_emitente = e.cnpj
+            WHERE (c.id IN (" . implode(",", $in_ids) . ")) AND (c.id_usuario = ?)
+            ORDER BY c.data_hora_emissao DESC
+        ";
+        $stmt = $conn->prepare($sql);    
+        $stmt->bind_param("i", $id_usuario);
+    }    
+
     $stmt->execute();
     $result = $stmt->get_result();
     $arr = [];
@@ -97,4 +122,3 @@ if ($ultimo_id !== "") {
 }
 $conn->close();
 ?>
-

@@ -12,10 +12,7 @@
   mysqli_free_result($result);
 
   function write_log($msg){
-    $fp = fopen("log.txt", "a");    
-    $escreve = fwrite($fp, $msg . "\n");        
-    fclose($fp);
+    file_put_contents("miliogo_log.txt", date("Y-m-d H:i:s") . " - " . $msg . "\n", FILE_APPEND);
   }  
 }
-
 ?>

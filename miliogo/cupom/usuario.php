@@ -61,7 +61,7 @@ if ($funcao == "login") {
     $stmt->execute();
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
-        http_response_code(400);
+        http_response_code(409);
         echo json_encode(["erro" => "Nome de usuario ja existe"]);
         $stmt->close();
         $conn->close();
@@ -91,4 +91,3 @@ if ($funcao == "login") {
 
 $conn->close();
 ?>
-

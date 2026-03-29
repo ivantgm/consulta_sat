@@ -9,4 +9,16 @@ if (!$data) {
         exit;
     }
 }
+
+function is_integer_array($array) {
+    if (!is_array($array)) {
+        return false;
+    }
+    foreach ($array as $value) {
+        if (!is_int($value)) {
+            return false;
+        }
+    }
+    return true;
+}
 ?>
