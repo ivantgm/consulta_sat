@@ -2,10 +2,62 @@
 
 require "api.php";
 
-$check_stmt = $conn->prepare("SELECT COUNT(*) FROM emitente WHERE cnpj = ?");
-$check_stmt->bind_param("s", $data["emitente"]["cnpj"]);
+if(!isset($data["emitente"])) {
+    http_response_code(400);
+    echo json_encode(["erro" => "Emitente não informado"]);
+    exit;
+}
+
+$emit = $data["emitente"];
+
+if(empty($emit["cnpj"])) {
+    http_response_code(400);
+    echo json_encode(["erro" => "CNPJ do emitente não informado"]);
+    exit;
+}
+if(empty($data["chave_acesso"])) {
+    http_response_code(400);
+    echo json_encode(["erro" => "Chave de acesso não informada"]);
+    exit;
+}
+if(
+    (!isset($data["itens"])) || 
+    (!is_array($data["itens"])) || 
+    (count($data["itens"]) == 0)
+  ) {
+    http_response_code(400);
+    echo json_encode(["erro" => "Itens do cupom não informados"]);
+    exit;
+}
+foreach ($data["itens"] as $item) {
+    if(!is_array($item)) {
+        http_response_code(400);
+        echo json_encode(["erro" => "Item do cupom deve ser um objeto"]);
+        exit;
+    }
+    if(
+        empty($item["seq"]) || 
+        empty($item["descricao"]) || 
+        empty($item["qtde"]) || 
+        empty($item["un"]) || 
+        empty($item["valor_total"])
+      ) {
+        http_response_code(400);
+        echo json_encode(["erro" => "Estrutura do item incompleta"]);
+        exit;
+    }
+}
+
+if(empty($data["valor_total"])) {
+    http_response_code(400);
+    echo json_encode(["erro" => "Valor total não informado"]);
+    exit;
+}
+
+$check_stmt = $conn->prepare("SELECT COUNT(*), nome FROM emitente WHERE cnpj = ?");
+$check_stmt->bind_param("s", $emit["cnpj"]);
 $check_stmt->execute();
-$check_stmt->bind_result($count);
+$check_stmt->bind_result($count, $emitente_nome);
 $check_stmt->fetch();
 $check_stmt->close();
 
@@ -14,8 +66,6 @@ if ($count == 0) {
         INSERT INTO emitente (cnpj, ie, im, nome, fantasia, endereco, bairro, cep, municipio)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
-
-    $emit = $data["emitente"];
     $stmt->bind_param(
         "sssssssss",
         $emit["cnpj"],
@@ -119,10 +169,17 @@ if ($count == 0) {
 
     $stmt->close();
     $conn->close();
+    $valor_currency = number_format($data["valor_total"], 2, ',', '.');
+    $mensagem = 
+      "Cupom importado com sucesso!\n" .
+      "R$ " . $valor_currency . 
+      " de " . 
+      $emitente_nome
+    ;
     echo json_encode(
         [
             "status" => "OK",
-            "mensagem" => "Cupom importado com sucesso!",
+            "mensagem" => $mensagem,
             "id_cupom" => $id_cupom
         ]
     );
@@ -141,6 +198,4 @@ if ($count == 0) {
         ]
     );
 }
-
-
 ?>
