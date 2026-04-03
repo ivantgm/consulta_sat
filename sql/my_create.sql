@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS usuario (
     ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip varchar(45),
     email varchar(255),
+    email_confirmado TIMESTAMP NULL,
+    email_confirmacao varchar(255),
     telefone varchar(255),
     PRIMARY KEY (`id`),
     UNIQUE KEY `idx_nome` (`nome`)

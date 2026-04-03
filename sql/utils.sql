@@ -121,3 +121,7 @@ alter table cupom add unique key idx_chave_acesso (chave_acesso, id_usuario);
 ALTER TABLE usuario 
 ADD COLUMN email varchar(255) AFTER ip,
 ADD COLUMN telefone varchar(255) AFTER email;
+
+ALTER TABLE usuario 
+ADD COLUMN email_confirmado TIMESTAMP NULL,
+ADD COLUMN email_confirmacao varchar(255);

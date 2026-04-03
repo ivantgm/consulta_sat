@@ -29,15 +29,19 @@ if (($_SERVER["REQUEST_METHOD"] == "POST") ||
     $email = $data["email"] ?? "";
     $telefone = $data["telefone"] ?? "";
 
-    $sql = "SELECT email, telefone FROM usuario WHERE id = ?";
+    $sql = "SELECT email, telefone, email_confirmado FROM usuario WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_usuario);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($row = $result->fetch_assoc()) {
+
+        $email_confirmado = $row["email_confirmado"] ? true : false;
+
         echo json_encode([
             "email" => $row["email"],
-            "telefone" => $row["telefone"]
+            "telefone" => $row["telefone"],
+            "email_confirmado" => $email_confirmado
         ]);
     } else {
         http_response_code(404);

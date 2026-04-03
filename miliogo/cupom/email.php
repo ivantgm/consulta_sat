@@ -10,7 +10,8 @@ require_once "const.php";
 function send_email($to, $subject, $body) {
     $mail = new PHPMailer(true);
     try {
-        $mail->isSMTP();                        
+        $mail->isSMTP(); 
+        $mail->CharSet    = "UTF-8";                       
         $mail->Host       = MAIL_HOST; 
         $mail->SMTPAuth   = true;               
         $mail->Username   = MAIL_USER; 

@@ -157,7 +157,7 @@ async function salvar_config(main_panel) {
   }  
 }
 
-async function ler_config() {
+async function ler_config(main_panel) {
   try {  
     const response = await fetch(
       "usuario_config.php",
@@ -174,8 +174,40 @@ async function ler_config() {
       throw new Error(data.erro);
     }
     const data = await response.json();
-    document.getElementById("email").value = data.email || "";
-    document.getElementById("telefone").value = data.telefone || "";
+    edit_email = document.getElementById("email");
+    edit_telefone = document.getElementById("telefone");
+    btn_confirmar_email = document.getElementById("btn_confirmar_email");
+
+    edit_email.value = data.email || "";
+    edit_telefone.value = data.telefone || "";    
+
+    if (data.email_confirmado) {
+      btn_confirmar_email.disabled = true;
+      edit_email.disabled = true;
+    } else { 
+      btn_confirmar_email.disabled = false; 
+      edit_email.disabled = false;    
+      btn_confirmar_email.addEventListener("click", async function() {
+        btn_confirmar_email.disabled = true; 
+        const response = await fetch(
+          "confirmar_email.php",
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "secret-key": main_panel.secret
+            }
+          }      
+        );
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.erro);
+        } else {          
+          btn_confirmar_email.textContent = "EMail enviado, verifique sua caixa postal";
+        }
+      });
+    }
+
 
   } catch (error) {
     message.textContent = error.message;
@@ -297,7 +329,9 @@ function layout_config(main_panel) {
     <button id="cancelar">Cancelar</button>
     <p><div id="message" class="mensagem_erro"></div></p>
     <label for="email">Email:</label><br>
-    <input type="email" id="email" name="email" placeholder="Email" /><br>
+    <input type="email" id="email" name="email" placeholder="Email" />
+    <button id="btn_confirmar_email" disabled>Confirmar Email</button>
+    <br>
     <label for="telefone">Telefone:</label><br>
     <input type="tel" id="telefone" name="telefone" placeholder="Telefone" />
     <br>
@@ -314,7 +348,7 @@ function layout_config(main_panel) {
       <button id="btn_troca_senha">Trocar Senha</button>      
     </div>
   `;
-  ler_config();
+  ler_config(main_panel);
   cancelar = document.getElementById("cancelar");
   cancelar.addEventListener(
     "click", 
