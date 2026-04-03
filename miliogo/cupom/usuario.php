@@ -1,6 +1,7 @@
 <?php
 
 require "api.nu.php";
+require "email.php";
 
 $nome = $data["nome"] ?? "";
 $senha = $data["senha"] ?? "";
@@ -48,6 +49,29 @@ if ($funcao == "login") {
             "sucesso" => "Senha alterada com sucesso",
             "secret" => base64_encode($nome . "\n" . $nova_senha_hashed)
         ]);
+
+        $sql_email = "SELECT email FROM usuario WHERE nome = ?";
+        $stmt_email = $conn->prepare($sql_email);
+        $stmt_email->bind_param("s", $nome);
+        $stmt_email->execute();
+        $result_email = $stmt_email->get_result();
+        if ($row_email = $result_email->fetch_assoc()) {
+            $email_usuario = $row_email["email"];
+        } else {
+            $email_usuario = null;
+        }
+        $stmt_email->close();
+
+        if ($email_usuario) {
+            send_email(
+                $email_usuario, 
+                "Senha Alterada", 
+                "Olá, " . $nome . "!<br><br>" . 
+                "Sua senha foi alterada com sucesso.<br><br>" . 
+                "Sua nova senha é: " . $nova_senha . "<br><br>" 
+            );
+        }
+
     } else {
         http_response_code(401);
         echo json_encode(["erro" => "Nome ou senha invalidos"]);

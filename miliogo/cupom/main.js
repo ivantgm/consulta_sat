@@ -73,6 +73,59 @@ async function criar_usuario(user, password, message) {
   }
 }
 
+async function trocar_senha(main_panel) {
+  const senha_atual = document.getElementById("senha_atual").value;
+  const nova_senha = document.getElementById("nova_senha").value;
+  const confirmar_senha = document.getElementById("confirmar_senha").value;
+  const message = document.getElementById("message_troca_senha");
+  if (nova_senha !== confirmar_senha) {    
+    message.textContent = "A nova senha e a confirmação não coincidem!";
+    blinkMessage(message);
+    return;
+  }
+  if (!senha_atual || !nova_senha) {
+    message.textContent = "Preencha os campos de senha atual e nova senha!";
+    blinkMessage(message);
+    return;
+  }
+  if (senha_atual === nova_senha) {
+    message.textContent = "A nova senha deve ser diferente da senha atual!";
+    blinkMessage(message);
+    return;
+  }
+  try {  
+    const response = await fetch(
+      "usuario.php",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(
+          {
+            "nome": main_panel.user,
+            "senha": senha_atual,
+            "nova_senha": nova_senha,
+            "funcao": "mudar_senha"
+          }
+        )
+      }      
+    );
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.erro);
+    } else {
+      const data = await response.json();
+      localStorage.setItem("secret", data.secret);
+      main_panel.secret = data.secret;
+    }    
+    layout_redirect(main_panel, "Senha alterada com sucesso!");
+  } catch (error) {
+    message.textContent = error.message;
+    blinkMessage(message);
+  }  
+}
+
 async function salvar_config(main_panel) {
   const email = document.getElementById("email").value;
   const telefone = document.getElementById("telefone").value;
@@ -247,6 +300,19 @@ function layout_config(main_panel) {
     <input type="email" id="email" name="email" placeholder="Email" /><br>
     <label for="telefone">Telefone:</label><br>
     <input type="tel" id="telefone" name="telefone" placeholder="Telefone" />
+    <br>
+    <div id="div_troca_senha" class="group_box">
+      <p>Alterar Senha:</p>
+      <p><div id="message_troca_senha" class="mensagem_erro"></div></p>
+      <label for="senha_atual">Senha Atual:</label><br>
+      <input type="password" id="senha_atual" name="senha_atual" placeholder="Senha Atual" /><br>
+      <label for="nova_senha">Nova Senha:</label><br>
+      <input type="password" id="nova_senha" name="nova_senha" placeholder="Nova Senha" /><br>
+      <label for="confirmar_senha">Confirmar Nova Senha:</label><br>
+      <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Confirmar Nova Senha" /><br>
+      <br>
+      <button id="btn_troca_senha">Trocar Senha</button>      
+    </div>
   `;
   ler_config();
   cancelar = document.getElementById("cancelar");
@@ -261,6 +327,13 @@ function layout_config(main_panel) {
     "click", 
     function() {
       salvar_config(main_panel);
+    }
+  );
+  btn_troca_senha = document.getElementById("btn_troca_senha");
+  btn_troca_senha.addEventListener(
+    "click",
+    function() {
+      trocar_senha(main_panel);
     }
   );
 }
