@@ -38,20 +38,19 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
             }
 
             $token = bin2hex(random_bytes(32));
-            $sql_update = "
-              UPDATE usuario 
-              SET email_confirmacao = ?, ts_email_confirmacao = NOW()
-              WHERE id = ?
-            ";
-            $stmt_update = $conn->prepare($sql_update);
-            $stmt_update->bind_param("si", $token, $id_usuario);
-            $stmt_update->execute();
-
             $confirm_link = "https://miliogo.com/cupom/confirmar.php?t=" . urlencode($token);
             $subject = "Confirmação de Email - Miliogo";
             $body = "Clique no link abaixo para confirmar seu email:<br><a href='$confirm_link'>$confirm_link</a>";
 
             if (send_email($email, $subject, $body)) {
+                $sql_update = "
+                    UPDATE usuario 
+                    SET email_confirmacao = ?, ts_email_confirmacao = NOW()
+                    WHERE id = ?
+                ";
+                $stmt_update = $conn->prepare($sql_update);
+                $stmt_update->bind_param("si", $token, $id_usuario);
+                $stmt_update->execute();                
                 echo json_encode(["sucesso" => "Email de confirmação enviado com sucesso"]);
             } else {
                 http_response_code(500);
