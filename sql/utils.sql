@@ -125,3 +125,6 @@ ADD COLUMN telefone varchar(255) AFTER email;
 ALTER TABLE usuario 
 ADD COLUMN email_confirmado TIMESTAMP NULL,
 ADD COLUMN email_confirmacao varchar(255);
+
+ALTER TABLE usuario 
+ADD COLUMN ts_email_confirmacao TIMESTAMP NULL;

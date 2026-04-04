@@ -5,7 +5,11 @@ require "email.php";
 
 if ($_SERVER["REQUEST_METHOD"] == "GET") {
 
-    $sql = "SELECT email, email_confirmado FROM usuario WHERE id = ?";
+    $sql = "
+      SELECT email, email_confirmado, ts_email_confirmacao 
+      FROM usuario 
+      WHERE id = ?
+    ";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_usuario);
     $stmt->execute();
@@ -17,6 +21,15 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
             echo json_encode(["erro" => "email ja confirmado"]);
             exit;
         } else {
+
+            if ($row["ts_email_confirmacao"] && (time() - strtotime($row["ts_email_confirmacao"])) < 3600) {
+                http_response_code(400);
+                echo json_encode([
+                    "erro" => "email enviado recentemente, aguarde um pouco..."
+                ]);
+                exit;
+            }
+
             $email = $row["email"];
             if ($email == "") {
                 http_response_code(400);
@@ -25,7 +38,11 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
             }
 
             $token = bin2hex(random_bytes(32));
-            $sql_update = "UPDATE usuario SET email_confirmacao = ? WHERE id = ?";
+            $sql_update = "
+              UPDATE usuario 
+              SET email_confirmacao = ?, ts_email_confirmacao = NOW()
+              WHERE id = ?
+            ";
             $stmt_update = $conn->prepare($sql_update);
             $stmt_update->bind_param("si", $token, $id_usuario);
             $stmt_update->execute();

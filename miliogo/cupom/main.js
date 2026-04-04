@@ -201,6 +201,7 @@ async function ler_config(main_panel) {
         );
         if (!response.ok) {
           const data = await response.json();
+          btn_confirmar_email.textContent = data.erro;
           throw new Error(data.erro);
         } else {          
           btn_confirmar_email.textContent = "EMail enviado, verifique sua caixa postal";
