@@ -8,6 +8,18 @@ if (($_SERVER["REQUEST_METHOD"] == "POST") ||
     $email = $data["email"] ?? "";
     $telefone = $data["telefone"] ?? "";
 
+    $sql_check = "SELECT id FROM usuario WHERE email = ? AND id != ?";
+    $stmt_check = $conn->prepare($sql_check);
+    $stmt_check->bind_param("si", $email, $id_usuario);
+    $stmt_check->execute();
+    $result_check = $stmt_check->get_result();
+    if ($result_check->num_rows > 0) {
+        http_response_code(409);
+        echo json_encode(["erro" => "email utilizado por outro usuário"]);
+        exit;
+    }
+    $stmt_check->close();
+
     $sql = "UPDATE usuario SET email = ?, telefone = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ssi", $email, $telefone, $id_usuario);
@@ -56,8 +68,4 @@ if (($_SERVER["REQUEST_METHOD"] == "POST") ||
     exit;
 }
 
-
-
-
 ?>
-
