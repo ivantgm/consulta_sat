@@ -128,3 +128,6 @@ ADD COLUMN email_confirmacao varchar(255);
 
 ALTER TABLE usuario 
 ADD COLUMN ts_email_confirmacao TIMESTAMP NULL;
+
+ALTER TABLE usuario 
+ADD COLUMN recuperacao_senha varchar(255);

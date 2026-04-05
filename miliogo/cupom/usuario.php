@@ -7,15 +7,22 @@ $nome = $data["nome"] ?? "";
 $senha = $data["senha"] ?? "";
 $funcao = $data["funcao"] ?? "";
 
-if ($nome == "" || $senha == "" || $funcao == "") {
+if ($funcao == "") {
     http_response_code(400);
-    echo json_encode(["erro" => "Nome, senha e funcao sao obrigatorios"]);
+    echo json_encode(["erro" => "Funcao e obrigatoria"]);
     exit;
 }
 
 $senha = md5(HASH_SECRET . $senha);
 
 if ($funcao == "login") {
+
+    if ($nome == "" || $senha == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nome e senha sao obrigatorios"]);
+        exit;
+    }
+
     $sql = "SELECT id, nome, senha FROM usuario WHERE nome = ? AND senha = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ss", $nome, $senha);
@@ -39,6 +46,11 @@ if ($funcao == "login") {
         echo json_encode(["erro" => "Nova senha e obrigatoria"]);
         exit;
     }
+    if ($nome == "" || $senha == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nome e senha sao obrigatorios"]);
+        exit;
+    }    
     $nova_senha_hashed = md5(HASH_SECRET . $nova_senha);
     $sql = "UPDATE usuario SET senha = ? WHERE nome = ? AND senha = ?";
     $stmt = $conn->prepare($sql);
@@ -79,6 +91,12 @@ if ($funcao == "login") {
     $stmt->close();
 } else if ($funcao == "criar") {
 
+    if ($nome == "" || $senha == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nome e senha sao obrigatorios"]);
+        exit;
+    }
+
     $sql = "SELECT id FROM usuario WHERE nome = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $nome);
@@ -104,6 +122,45 @@ if ($funcao == "login") {
     } else {
         http_response_code(400);
         echo json_encode(["erro" => "Erro ao criar usuario"]);
+    }
+    $stmt->close();
+
+} else if ($funcao == "recuperar_senha") {
+    $email = $data["email"] ?? "";
+    if ($email == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Email e obrigatorio"]);
+        exit;
+    }
+    $sql = "SELECT id, nome FROM usuario WHERE email = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+
+        $token = bin2hex(random_bytes(32));
+
+        $sql_update = "UPDATE usuario SET recuperacao_senha = ? WHERE id = ?";
+        $stmt_update = $conn->prepare($sql_update);
+        $stmt_update->bind_param("si", $token, $row["id"]);
+        $stmt_update->execute();        
+
+        $recuperar_link = "https://miliogo.com/cupom/recuperar.php?t=" . urlencode($token);
+        $body = "Clique no link abaixo para recuperar sua senha:<br><a href='$recuperar_link'>$recuperar_link</a>";
+        send_email(
+            $email, 
+            "Recuperação de Senha", 
+            "Olá, " . $row["nome"] . "!<br><br>" . 
+            "Recebemos uma solicitação para recuperar sua senha.<br><br>" .
+            $body .
+            "<br><br>Se você não solicitou a recuperação de senha, por favor ignore este email."
+        );
+
+        echo json_encode(["sucesso" => "Email de recuperação enviado com sucesso"]);
+    } else {
+        http_response_code(404);
+        echo json_encode(["erro" => "Email nao encontrado"]);
     }
     $stmt->close();
 

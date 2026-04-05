@@ -251,6 +251,36 @@ async function login(user, password, message) {
   }
 }
 
+async function enviar_email_recuperacao(email, message_recuperacao) {
+  try {  
+    const response = await fetch(
+      "usuario.php",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(
+          { 
+            "email": email, 
+            "funcao": "recuperar_senha"
+          }
+        )
+      }      
+    );
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.erro);
+    } else {
+      const data = await response.json();
+      layout_redirect(main_panel, "Enviamos um e-mail para você :-)");
+    }
+  } catch (error) {
+    message_recuperacao.textContent = error.message;
+    blinkMessage(message_recuperacao);
+  }
+}
+
 function layout_novo_usuario(main_panel) {
   main_panel.innerHTML = `
     <p>Bem vindo!</p>
@@ -287,6 +317,11 @@ function layout_login(main_panel) {
     <div id="message" class="mensagem_erro"></div>
     <p>Não é cadastrado? Crie sua conta, é grátis:</p>
     <button id="btn_create_user">Criar novo usuário</button>
+    <p>Esqueceu sua senha?</p>
+    <div id="message_recuperacao" class="mensagem_erro"></div>
+    <input type="email" id="email_recuperacao" placeholder="Email para recuperação de senha" />
+    <button id="btn_recuperar_senha">Recuperar Senha</button>
+
   `;
   btn_login = document.getElementById("btn_login");
   btn_login.addEventListener(
@@ -309,6 +344,20 @@ function layout_login(main_panel) {
     "click", 
     function() {
       layout_novo_usuario(main_panel);
+    }
+  );
+  btn_recuperar_senha = document.getElementById("btn_recuperar_senha");
+  btn_recuperar_senha.addEventListener(
+    "click", 
+    function() {
+      const email = document.getElementById("email_recuperacao").value;
+      const message_recuperacao = document.getElementById("message_recuperacao");
+      if (!email) {
+        message_recuperacao.textContent = "Preencha o campo de email!";
+        blinkMessage(message_recuperacao);
+        return;
+      }
+      enviar_email_recuperacao(email, message_recuperacao);
     }
   );
 }
