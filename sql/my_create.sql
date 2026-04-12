@@ -73,3 +73,13 @@ CREATE TABLE IF NOT EXISTS usuario (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 insert into usuario (nome, senha) values ('nome_usuario', md5('senha_usuario'));
+
+CREATE TABLE IF NOT EXISTS url (
+    id int(10) not null AUTO_INCREMENT,
+    url varchar(255),
+    ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    id_usuario int(10),
+    erro TEXT,
+    detalhes TEXT,
+    PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
