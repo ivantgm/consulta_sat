@@ -164,6 +164,57 @@ if ($funcao == "login") {
     }
     $stmt->close();
 
+} else if ($funcao == "excluir") {
+    if ($nome == "" || $senha == "") {
+        http_response_code(400);
+        echo json_encode(["erro" => "Nome e senha sao obrigatorios"]);
+        exit;
+    }
+    $sql = "SELECT id FROM usuario WHERE nome = ? AND senha = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("ss", $nome, $senha);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        $id_usuario = $row["id"];
+    } else {
+        http_response_code(401);
+        echo json_encode(["erro" => "Nome ou senha invalidos"]);
+        exit;
+    }
+    $stmt->close();
+
+    $excluir_usuario = $data["excluir_usuario"] === true;     
+    $dias = intval($data["dias"]) ?? 0;
+
+    $sql = "DELETE i FROM cupom_item i JOIN cupom c ON i.id_cupom = c.id WHERE c.id_usuario = ?";
+    if ($dias) {        
+        $sql .= " AND STR_TO_DATE(c.data_hora_emissao, '%Y%m%d%H%i%s') >= DATE_SUB(NOW(), INTERVAL $dias DAY)";
+    }
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_usuario);
+    $stmt->execute();
+    $stmt->close();       
+
+    $sql = "DELETE FROM cupom WHERE id_usuario = ?";
+    if ($dias) {        
+        $sql .= " AND STR_TO_DATE(data_hora_emissao, '%Y%m%d%H%i%s') >= DATE_SUB(NOW(), INTERVAL $dias DAY)";
+    }
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_usuario);
+    $stmt->execute();
+    $stmt->close(); 
+
+    if ($excluir_usuario) {
+        $sql = "DELETE FROM usuario WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $id_usuario);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    echo json_encode(["sucesso" => "Dados excluidos com sucesso"]);
+    
 } else {
     http_response_code(400);
     echo json_encode(["erro" => "funcao invalida"]);

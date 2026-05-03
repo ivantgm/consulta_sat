@@ -1,11 +1,17 @@
 import json
 import urllib.request
 
-URL_POST = "https://miliogo.com/cupom/usuario.php"
-#URL_POST = "http://localhost/miliogo/cupom/usuario.php"
+#URL_POST = "https://miliogo.com/cupom/usuario.php"
+URL_POST = "http://localhost/miliogo/cupom/usuario.php"
 
 prompt = """
-  Digite >\n1 para criar\n2 para login\n3 para alterar senha\nEscolha sua opção: 
+Digite >
+1 para criar
+2 para login
+3 para alterar senha
+4 para excluir conta
+5 para excluir cupons
+Escolha sua opção: 
 """
 p = input(prompt)
 
@@ -84,4 +90,59 @@ elif p == "3": ## Alterar senha
             resposta = resp.read().decode("utf-8")
             print(resposta)
     except urllib.error.URLError as e:
-        print(f"Erro: {e.read().decode('utf-8')}")        
+        print(f"Erro: {e.read().decode('utf-8')}") 
+
+elif p == "4": ## Excluir conta
+    nome = input("Nome: ")
+    senha = input("Senha: ")
+    data = {
+        "nome": nome,
+        "senha": senha,
+        "funcao": "excluir",
+        "excluir_usuario": True
+    }
+    json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        URL_POST,
+        data=json_bytes,
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "miliogo-cupom-client/1.0"
+        },    
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            resposta = resp.read().decode("utf-8")
+            print(resposta)
+    except urllib.error.URLError as e:
+        print(f"Erro: {e.read().decode('utf-8')}")
+
+elif p == "5": ## Excluir cupons
+    nome = input("Nome: ")
+    senha = input("Senha: ")
+    dias = int(input("Excluir cupons recentes (em dias, zero para todos): "))
+    data = {
+        "nome": nome,
+        "senha": senha,
+        "funcao": "excluir",
+        "excluir_usuario": False,
+        "dias": dias
+    }
+    json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        URL_POST,
+        data=json_bytes,
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "miliogo-cupom-client/1.0"
+        },    
+        method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            resposta = resp.read().decode("utf-8")
+            print(resposta)
+    except urllib.error.URLError as e:
+        print(f"Erro: {e.read().decode('utf-8')}")
+        
