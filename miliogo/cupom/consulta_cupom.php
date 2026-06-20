@@ -56,17 +56,18 @@ if (($ultimo_id !== "") || (is_integer_array($in_ids)&& (count($in_ids) > 0))) {
         $itens = [];
         $itens_sql = "
           SELECT 
-            seq, 
-            codigo, 
-            descricao, 
-            qtde, 
-            un, 
-            valor_unit, 
-            tributos,
-            valor_total,
-            desconto 
-          FROM cupom_item 
-          WHERE id_cupom = ?
+            ci.seq, 
+            ci.codigo, 
+            COALESCE(p.nome, ci.descricao) AS descricao, 
+            ci.qtde, 
+            ci.un, 
+            ci.valor_unit, 
+            ci.tributos,
+            ci.valor_total,
+            ci.desconto 
+          FROM cupom_item ci
+          LEFT JOIN produto p ON ci.codigo = p.codigo
+          WHERE ci.id_cupom = ?
         ";
         $itens_stmt = $conn->prepare($itens_sql);
         $itens_stmt->bind_param("i", $row["id"]);
