@@ -83,3 +83,18 @@ CREATE TABLE IF NOT EXISTS url (
     detalhes TEXT,
     PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS produto (
+    id int(10) not null AUTO_INCREMENT,
+    ts_i TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ts_u TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    codigo varchar(64),
+    nome varchar(1000),
+    marca varchar(1000),
+    outros varchar(1000),
+    origem varchar(50),
+    id_origem varchar(50),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `idx_codigo` (`codigo`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+

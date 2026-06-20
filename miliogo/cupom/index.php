@@ -6,7 +6,7 @@ $resultados = [];
 if ($termo !== "") {
     $sql = "
         SELECT 
-            i.descricao AS produto, 
+            COALESCE(p.nome, i.descricao) AS produto,  
             i.un AS un,
             i.valor_unit-(i.desconto/i.qtde) AS valor, 
             i.desconto/i.qtde AS desconto,
@@ -19,8 +19,9 @@ if ($termo !== "") {
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
-        WHERE i.descricao LIKE ?        
-        GROUP BY i.descricao, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        LEFT JOIN produto p ON p.codigo = i.codigo
+        WHERE COALESCE(p.nome, i.descricao) LIKE ?        
+        GROUP BY produto, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
         ORDER BY c.data_hora_emissao DESC
         LIMIT 25
     ";

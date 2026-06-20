@@ -131,3 +131,32 @@ ADD COLUMN ts_email_confirmacao TIMESTAMP NULL;
 
 ALTER TABLE usuario 
 ADD COLUMN recuperacao_senha varchar(255);
+
+-- cupons com código de produto que não existe na tabela de produtos
+select distinct 
+  ci.descricao as nome_cupom, 
+  ci.codigo ean_cupom 
+from cupom_item ci 
+left outer join produto p on p.codigo = ci.codigo 
+where p.id is null and CHAR_LENGTH(ci.codigo)=13;
+
+-- produtos que não existem no cupom
+select distinct 
+  p.nome as nome_conf, 
+  p.codigo ean_conf 
+from produto p 
+left outer join cupom_item ci on p.codigo = ci.codigo 
+where ci.id is null and CHAR_LENGTH(p.codigo)=13
+
+
+-- produtos que deram match com o cupom
+select distinct 
+  p.nome as nome_conf, 
+  p.codigo ean_conf, 
+  ci.descricao as nome_cupom, 
+  ci.codigo ean_cupom   
+from produto p 
+left outer join cupom_item ci on p.codigo = ci.codigo 
+where ci.id is not null and CHAR_LENGTH(p.codigo)=13
+
+

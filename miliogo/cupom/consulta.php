@@ -9,7 +9,7 @@ if ($codigo !== "") {
     $sql = "
         SELECT 
             i.codigo AS codigo,
-            i.descricao AS nome, 
+            COALESCE(p.nome, i.descricao) AS nome,
             i.un AS un,
             round(i.valor_unit-(i.desconto/i.qtde), 2) AS valor, 
             round(i.desconto/i.qtde, 2) AS desconto,
@@ -22,8 +22,9 @@ if ($codigo !== "") {
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
+        LEFT JOIN produto p ON p.codigo = i.codigo
         WHERE i.codigo = ?        
-        GROUP BY i.descricao, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
         ORDER BY c.data_hora_emissao DESC
     ";
     $stmt = $conn->prepare($sql);
@@ -50,7 +51,7 @@ if ($codigo !== "") {
     $sql = "
         SELECT 
             i.codigo AS codigo,
-            i.descricao AS nome, 
+            COALESCE(p.nome, i.descricao) AS nome, 
             i.un AS un,
             round(i.valor_unit-(i.desconto/i.qtde), 2) AS valor, 
             round(i.desconto/i.qtde, 2) AS desconto,
@@ -63,9 +64,10 @@ if ($codigo !== "") {
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
-        WHERE i.descricao LIKE ?        
-        GROUP BY i.descricao, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
-        ORDER BY c.data_hora_emissao DESC
+        LEFT JOIN produto p ON p.codigo = i.codigo
+        WHERE COALESCE(p.nome, i.descricao) LIKE ?        
+        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        ORDER BY c.data_hora_emissao DESC;
     ";
     $stmt = $conn->prepare($sql);
     $like = "%" . $nome . "%";
