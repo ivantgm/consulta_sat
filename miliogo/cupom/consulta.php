@@ -64,9 +64,7 @@ if ($codigo !== "") {
             SUBSTRING(c.data_hora_emissao, 5, 2), '/', 
             SUBSTRING(c.data_hora_emissao, 1, 4)
             ) AS data,
-            e.nome AS emitente,
-            e.endereco AS endereco,
-            e.municipio AS municipio
+            e.nome AS emitente
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
@@ -89,9 +87,7 @@ if ($codigo !== "") {
             "valor" => $row["valor"],
             "desconto" => $row["desconto"],
             "data" => $row["data"],
-            "emitente" => $row["emitente"],
-            "endereco" => $row["endereco"],
-            "municipio" => $row["municipio"]
+            "emitente" => $row["emitente"]
         ];
     }
     echo json_encode($arr);
