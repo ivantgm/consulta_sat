@@ -68,6 +68,7 @@ if (($ultimo_id !== "") || (is_integer_array($in_ids)&& (count($in_ids) > 0))) {
           FROM cupom_item ci
           LEFT JOIN produto p ON ci.codigo = p.codigo
           WHERE ci.id_cupom = ?
+          ORDER BY ci.seq
         ";
         $itens_stmt = $conn->prepare($itens_sql);
         $itens_stmt->bind_param("i", $row["id"]);
