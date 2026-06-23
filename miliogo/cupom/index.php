@@ -15,13 +15,15 @@ if ($termo !== "") {
             SUBSTRING(c.data_hora_emissao, 5, 2), '/', 
             SUBSTRING(c.data_hora_emissao, 1, 4)
             ) AS data,
-            e.nome AS emitente
+            e.nome AS emitente,
+            e.endereco,
+            e.municipio
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
         LEFT JOIN produto p ON p.codigo = i.codigo
         WHERE COALESCE(p.nome, i.descricao) LIKE ?        
-        GROUP BY produto, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        GROUP BY produto, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome, e.endereco, e.municipio
         ORDER BY c.data_hora_emissao DESC
         LIMIT 25
     ";
@@ -76,6 +78,8 @@ $conn->close();
                             <th>Desconto</th>
                             <th>Data</th>
                             <th>Emitente</th>
+                            <th>Endereço</th>
+                            <th>Município</th>
                         </tr>
                         <?php foreach ($resultados as $r): ?>
                             <tr>
@@ -89,6 +93,8 @@ $conn->close();
                                 <td class="valor"><?= number_format($r['desconto'], 2, ',', '.') ?></td>
                                 <td><?= htmlspecialchars($r['data']) ?></td>
                                 <td><?= htmlspecialchars($r['emitente']) ?></td>
+                                <td><?= htmlspecialchars($r['endereco']) ?></td>
+                                <td><?= htmlspecialchars($r['municipio']) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </table>

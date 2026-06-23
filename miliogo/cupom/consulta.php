@@ -18,13 +18,15 @@ if ($codigo !== "") {
             SUBSTRING(c.data_hora_emissao, 5, 2), '/', 
             SUBSTRING(c.data_hora_emissao, 1, 4)
             ) AS data,
-            e.nome AS emitente
+            e.nome AS emitente,
+            e.endereco,
+            e.municipio
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
         LEFT JOIN produto p ON p.codigo = i.codigo
         WHERE i.codigo = ?        
-        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome, e.endereco, e.municipio
         ORDER BY c.data_hora_emissao DESC
     ";
     $stmt = $conn->prepare($sql);
@@ -40,7 +42,9 @@ if ($codigo !== "") {
             "valor" => $row["valor"],
             "desconto" => $row["desconto"],
             "data" => $row["data"],
-            "emitente" => $row["emitente"]
+            "emitente" => $row["emitente"],
+            "endereco" => $row["endereco"],
+            "municipio" => $row["municipio"]
         ];
     }
     echo json_encode($arr);
@@ -60,13 +64,15 @@ if ($codigo !== "") {
             SUBSTRING(c.data_hora_emissao, 5, 2), '/', 
             SUBSTRING(c.data_hora_emissao, 1, 4)
             ) AS data,
-            e.nome AS emitente
+            e.nome AS emitente,
+            e.endereco AS endereco,
+            e.municipio AS municipio
         FROM cupom_item i
         JOIN cupom c ON c.id = i.id_cupom
         LEFT JOIN emitente e ON e.cnpj = c.cnpj_emitente
         LEFT JOIN produto p ON p.codigo = i.codigo
         WHERE COALESCE(p.nome, i.descricao) LIKE ?        
-        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome
+        GROUP BY nome, i.valor_unit, i.desconto, c.data_hora_emissao, e.nome, e.endereco, e.municipio
         ORDER BY c.data_hora_emissao DESC;
     ";
     $stmt = $conn->prepare($sql);
@@ -83,7 +89,9 @@ if ($codigo !== "") {
             "valor" => $row["valor"],
             "desconto" => $row["desconto"],
             "data" => $row["data"],
-            "emitente" => $row["emitente"]
+            "emitente" => $row["emitente"],
+            "endereco" => $row["endereco"],
+            "municipio" => $row["municipio"]
         ];
     }
     echo json_encode($arr);
