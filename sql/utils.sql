@@ -176,7 +176,7 @@ select
 from cupom_item ci
 left outer join cupom c on c.id=ci.id_cupom
 left outer join produto p on p.codigo=ci.codigo
-where (c.id_usuario not in(38,39))
+where (c.id_usuario not in(38,39,41))
   and (char_length(ci.codigo) >= 8)
 group by ci.codigo
 order by vezes desc;
