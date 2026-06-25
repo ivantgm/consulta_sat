@@ -159,4 +159,26 @@ from produto p
 left outer join cupom_item ci on p.codigo = ci.codigo 
 where ci.id is not null and CHAR_LENGTH(p.codigo)=13
 
+-- contagem de cupons por usuario
+select 
+  count(*) as cupons, 
+  u.nome as usuario 
+from cupom c 
+left outer join usuario u on u.id=c.id_usuario 
+group by c.id_usuario 
+order by cupons desc;
+
+-- produtos comprados que tem ean na tabela produto
+select 
+  ci.codigo, 
+  p.nome,
+  count(*) as vezes
+from cupom_item ci
+left outer join cupom c on c.id=ci.id_cupom
+left outer join produto p on p.codigo=ci.codigo
+where (c.id_usuario not in(38,39))
+  and (char_length(ci.codigo) >= 8)
+group by ci.codigo
+order by vezes desc;
+
 
